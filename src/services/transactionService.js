@@ -30,14 +30,19 @@ async function fetchFormattedTransactions({
   const response = await upstreamClient.fetchTransactions(params, userAgent);
   const rawTransactions = response?.transactions || response?.data?.transactions || [];
 
-  const formattedTransactions = rawTransactions.map((tx) => ({
-    amount: parseInt(tx.gross_amount || tx.real_gross_amount || 0, 10),
-    status: tx.transaction_status ? tx.transaction_status.toLowerCase() : "success",
-    time: tx.transaction_time || tx.settlement_time,
-    issuer: tx.qris_provider_aspi_issuer || "GoPay / Bank",
-    order_id: tx.order_id,
-    transaction_id: tx.id,
-  }));
+  const formattedTransactions = rawTransactions.map((tx) => {
+    const rawAmount = parseInt(tx.gross_amount || tx.real_gross_amount || 0, 10);
+    // Gojek analytics API returns amounts in minor units (multiplied by 100)
+    const amount = rawAmount > 0 && rawAmount % 100 === 0 ? rawAmount / 100 : rawAmount;
+    return {
+      amount,
+      status: tx.transaction_status ? tx.transaction_status.toLowerCase() : "success",
+      time: tx.transaction_time || tx.settlement_time,
+      issuer: tx.qris_provider_aspi_issuer || "GoPay / Bank",
+      order_id: tx.order_id,
+      transaction_id: tx.id,
+    };
+  });
 
   const totalAmount = String(formattedTransactions.reduce((total, tx) => total + tx.amount, 0));
 

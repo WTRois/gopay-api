@@ -18,23 +18,14 @@ router.get("/api/qr-status/:id", async (req, res) => {
     return res.json({ success: true, paid: true, status: "PAID", transaction: qris.transaction });
   }
 
-  if (Date.now() > qris.expiresAt.getTime()) {
-    qrisStore.delete(qrisId);
-    return res.json({
-      success: false,
-      paid: false,
-      status: "EXPIRED",
-      message: "QRIS sudah kedaluwarsa",
-    });
-  }
-
+  // Cek pembayaran ke upstream terlebih dahulu sebelum menandai kedaluwarsa
   try {
     const matched = await verifyPayment(
       qris.amount,
       qris.createdAt,
       null,
       req.headers["user-agent"],
-      qris.trxId || qrisId,
+      qrisId,
     );
     if (matched) {
       qris.status = "PAID";
@@ -46,15 +37,26 @@ router.get("/api/qr-status/:id", async (req, res) => {
       );
       return res.json({ success: true, paid: true, status: "PAID", transaction: matched });
     }
-    return res.json({
-      success: true,
-      paid: false,
-      status: "PENDING",
-      message: "Belum ada pembayaran masuk",
-    });
-  } catch (err) {
-    return res.json({ success: false, paid: false, status: "PENDING", message: err.message });
+  } catch (_err) {
+    // Lanjut ke pemeriksaan expiry jika verifyPayment gagal
   }
+
+  if (Date.now() > qris.expiresAt.getTime()) {
+    qrisStore.delete(qrisId);
+    return res.json({
+      success: false,
+      paid: false,
+      status: "EXPIRED",
+      message: "QRIS sudah kedaluwarsa",
+    });
+  }
+
+  return res.json({
+    success: true,
+    paid: false,
+    status: "PENDING",
+    message: "Belum ada pembayaran masuk",
+  });
 });
 
 // Cek Pembayaran Masuk (Backend / Server-to-Server)

@@ -68,7 +68,8 @@ async function verifyPayment(
 ) {
   // 1. Idempotency check: If payment is already marked PAID, return transaction immediately
   if (qrisId) {
-    const payment = paymentRepository.getPayment(qrisId);
+    const payment =
+      paymentRepository.getPayment(qrisId) || paymentRepository.getPaymentByTrxId(qrisId);
     if (payment && payment.status === "PAID" && payment.transaction) {
       return payment.transaction;
     }
@@ -106,10 +107,12 @@ async function verifyPayment(
       continue;
     }
 
-    const txAmount = parseInt(
+    const rawTxAmount = parseInt(
       tx.gross_amount || tx.real_gross_amount || tx.amount?.value || tx.amount || 0,
       10,
     );
+    // Gojek v2 analytics API returns gross_amount in minor currency units (multiplied by 100 / cents)
+    const txAmount = rawTxAmount === targetAmount * 100 ? rawTxAmount / 100 : rawTxAmount;
     const txTimestamp = new Date(
       tx.transaction_time || tx.created_at || tx.settlement_time || 0,
     ).getTime();
@@ -131,13 +134,17 @@ async function verifyPayment(
         };
 
         if (qrisId) {
-          paymentRepository.updatePaymentStatus(
-            qrisId,
-            "PAID",
-            new Date(),
-            txId,
-            transactionDetail,
-          );
+          const payment =
+            paymentRepository.getPayment(qrisId) || paymentRepository.getPaymentByTrxId(qrisId);
+          if (payment) {
+            paymentRepository.updatePaymentStatus(
+              payment.id,
+              "PAID",
+              new Date(),
+              txId,
+              transactionDetail,
+            );
+          }
         }
 
         if (claimResult.isNew) {

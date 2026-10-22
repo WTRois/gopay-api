@@ -21,13 +21,29 @@ const MIGRATIONS = [
 
         CREATE TABLE IF NOT EXISTS transaction_claims (
           upstream_transaction_id TEXT PRIMARY KEY,
-          payment_id TEXT NOT NULL REFERENCES payments(id),
+          payment_id TEXT NOT NULL,
           claimed_at TEXT NOT NULL
         );
 
         CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
         CREATE INDEX IF NOT EXISTS idx_payments_expires ON payments(expires_at);
         CREATE INDEX IF NOT EXISTS idx_payments_trx_id ON payments(trx_id);
+      `);
+    },
+  },
+  {
+    version: 2,
+    name: "relax_transaction_claims_fk",
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS transaction_claims_v2 (
+          upstream_transaction_id TEXT PRIMARY KEY,
+          payment_id TEXT NOT NULL,
+          claimed_at TEXT NOT NULL
+        );
+        INSERT OR IGNORE INTO transaction_claims_v2 SELECT * FROM transaction_claims;
+        DROP TABLE IF EXISTS transaction_claims;
+        ALTER TABLE transaction_claims_v2 RENAME TO transaction_claims;
       `);
     },
   },
