@@ -16,20 +16,18 @@ echo "        GoPay Merchant Gateway - Setup Helper             "
 echo "=========================================================="
 echo -e "${NC}"
 
-# 1. Cek versi Node.js
-if ! command -v node &> /dev/null; then
-    echo -e "${RED}[ERROR] Node.js belum terinstall! Harap install Node.js (v18.x direkomendasikan).${NC}"
+# 1. Cek versi Bun atau Node.js
+if command -v bun &> /dev/null; then
+    RUNNER="bun"
+    BUN_VER=$(bun --version)
+    echo -e "[INFO] Bun runtime terdeteksi: ${GREEN}v${BUN_VER}${NC}"
+elif command -v node &> /dev/null; then
+    RUNNER="node"
+    NODE_VER=$(node -v)
+    echo -e "[INFO] Node.js terdeteksi: ${YELLOW}${NODE_VER}${NC} (Disarankan menggunakan Bun v1.4.3+)"
+else
+    echo -e "${RED}[ERROR] Runtime belum terinstall! Harap install Bun (https://bun.sh) atau Node.js.${NC}"
     exit 1
-fi
-
-NODE_VER=$(node -v)
-echo -e "[INFO] Versi Node.js terdeteksi: ${YELLOW}${NODE_VER}${NC}"
-
-NODE_MAJOR=$(node -v | cut -d'.' -f1 | sed 's/v//')
-if [ "$NODE_MAJOR" -ge 20 ]; then
-    echo -e "${YELLOW}[PERINGATAN] Anda menggunakan Node.js v20+.${NC}"
-    echo -e "${YELLOW}Di cPanel Shared Hosting (CloudLinux), Node v20 dapat menyebabkan 'Out of Memory WebAssembly'.${NC}"
-    echo -e "${YELLOW}Disarankan menurunkan versi Node.js ke 18.x jika menggunakan cPanel.${NC}\n"
 fi
 
 # 2. Copy .env dari template jika belum ada
@@ -53,8 +51,13 @@ else
 fi
 
 # 3. Install Dependencies
-echo -e "\n[INFO] Menginstall dependencies npm..."
-npm install
+if [ "$RUNNER" = "bun" ]; then
+    echo -e "\n[INFO] Menginstall dependencies menggunakan Bun..."
+    bun install
+else
+    echo -e "\n[INFO] Menginstall dependencies npm..."
+    npm install
+fi
 
 echo -e "${GREEN}[OK] Dependencies berhasil diinstall.${NC}\n"
 
@@ -63,10 +66,14 @@ echo -e "=========================================================="
 read -p "Apakah Anda ingin menjalankan login OTP GoPay sekarang? (y/n): " RUN_LOGIN
 
 if [[ "$RUN_LOGIN" =~ ^[Yy]$ ]]; then
-    echo -e "\n[INFO] Menjalankan login.js..."
-    node login.js
+    echo -e "\n[INFO] Menjalankan login.js via $RUNNER..."
+    if [ "$RUNNER" = "bun" ]; then
+        bun run login.js
+    else
+        node login.js
+    fi
 else
-    echo -e "${YELLOW}[INFO] Anda dapat menjalankan login OTP kapan saja dengan perintah: node login.js${NC}"
+    echo -e "${YELLOW}[INFO] Anda dapat menjalankan login OTP kapan saja dengan perintah: $RUNNER run login.js${NC}"
 fi
 
 echo -e "\n${GREEN}=========================================================="

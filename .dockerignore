@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Version control & docs
+.git/
+.gitignore
+docs/
+
+# Environment files & secrets
+.env
+.env.*
+!.env.example
+
+# Persistent data and storage
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Sessions and cache
+.GOPAY_SESI_JANGAN_DIHAPUS.json
+.gopay_cache.json
+
+# Tests & tooling
+tests/
+biome.json
+
+# Logs & temp
+*.log
+*.raw.js
+obfuscate.js
+.DS_Store

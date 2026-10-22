@@ -2,12 +2,20 @@ version: "3.8"
 
 services:
   gopay-gateway:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: gopay-gateway
-    restart: always
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${PORT:-3000}:3000"
     env_file:
       - .env
-    environment:
-      - PORT=3000
+    volumes:
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "bun", "run", "src/healthcheck.js"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
