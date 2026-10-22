@@ -6,4 +6,11 @@ node_modules/
 *.raw.js
 obfuscate.js
 
+# Storage & persistent DB
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
 
+# System
+.DS_Store

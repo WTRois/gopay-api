@@ -34,7 +34,7 @@ API Gateway self-hosted berbasis Node.js untuk otomatisasi cek transaksi dan cet
 > [!CAUTION]
 > 🚨 **PERSYARATAN DEPLOYMENT (VPS / cPanel / Pterodactyl Panel)**
 > Gateway ini **dapat di-deploy di VPS, cPanel Hosting, maupun Pterodactyl Panel (Node.js Egg v18.x/v20.x)** yang memiliki penyimpanan permanen 24/7.
-> **DILARANG MENGGUNAKAN HOSTING SERVERLESS GRATISAN** (seperti Render Free, Vercel, Netlify) karena container akan *sleep* dan menghapus file sesi (`.GOPAY_SESI_JANGAN_DIHAPUS.json`), yang mengakibatkan sesi hangus dan harus login OTP ulang.
+> **DILARANG MENGGUNAKAN HOSTING SERVERLESS GRATISAN** (seperti Render Free, Vercel, Netlify) karena container akan _sleep_ dan menghapus file sesi (`.GOPAY_SESI_JANGAN_DIHAPUS.json`), yang mengakibatkan sesi hangus dan harus login OTP ulang.
 
 > [!WARNING]
 > ⚠️ **DISCLAIMER PROYEK TIDAK RESMI:**
@@ -67,6 +67,7 @@ API Gateway self-hosted berbasis Node.js untuk otomatisasi cek transaksi dan cet
 ## 🛠️ Quick Start (Pengujian Lokal)
 
 ### 1. Clone & Install Dependencies
+
 ```bash
 git clone https://github.com/ahmadzakiyox/gopay-api-gateaway.git
 cd gopay-api-gateaway
@@ -74,6 +75,7 @@ npm install
 ```
 
 ### 2. Konfigurasi `.env`
+
 Salin template `.env.example` ke `.env`:
 ```bash
 cp .env.example .env
@@ -87,9 +89,11 @@ GOPAY_MERCHANT_ID=YOUR_MERCHANT_ID_HERE
 ```
 
 ### 3. Login OTP di Terminal (1 Kali Saja)
+
 ```bash
 node login.js
 ```
+
 - Masukkan nomor HP GoBiz (contoh: `085119772671`).
 - Masukkan kode OTP (4 digit) yang dikirimkan via SMS/WA.
 - Sesi login akan disimpan secara permanen di file `.GOPAY_SESI_JANGAN_DIHAPUS.json`.
@@ -101,6 +105,7 @@ node login.js
 Untuk memastikan gateway berjalan **24/7 non-stop** di VPS dan token auto-refresh bekerja dengan baik, ikuti langkah deploy di bawah ini:
 
 ### 📍 Langkah 1: Install Node.js & Git di VPS
+
 Jalankan perintah ini di terminal VPS kamu (contoh untuk Ubuntu/Debian):
 ```bash
 # Update package list & install Git
@@ -112,6 +117,7 @@ sudo apt install -y nodejs
 ```
 
 ### 📍 Langkah 2: Setup Project & Login OTP Pertama Kali
+
 ```bash
 # Clone repository
 git clone https://github.com/ahmadzakiyox/gopay-api-gateaway.git
@@ -135,24 +141,28 @@ node login.js
 Kamu bisa memilih salah satu dari 2 metode deploy production berikut:
 
 #### 🟢 Metode A: Deploy Menggunakan PM2 (Sangat Direkomendasikan)
-PM2 adalah Process Manager untuk Node.js agar server otomatis hidup kembali jika terjadi crash atau VPS di-reboot.
 
+PM2 adalah Process Manager untuk Node.js agar server otomatis hidup kembali jika terjadi crash atau VPS di-reboot.
 1. **Install PM2 secara global:**
+
    ```bash
    sudo npm install -g pm2
    ```
 
 2. **Jalankan gateway dengan PM2:**
+
    ```bash
    pm2 start server.js --name "gopay-gateway"
    ```
 
 3. **Simpan agar otomatis jalan saat VPS di-reboot:**
+
    ```bash
    pm2 save
    pm2 startup
    ```
-   *(Jalankan perintah yang dimunculkan oleh `pm2 startup` jika ada).*
+
+   _(Jalankan perintah yang dimunculkan oleh `pm2 startup` jika ada)._
 
 4. **Perintah Berguna PM2:**
    - Cek status server: `pm2 status`
@@ -162,14 +172,16 @@ PM2 adalah Process Manager untuk Node.js agar server otomatis hidup kembali jika
 ---
 
 #### 🐳 Metode B: Deploy Menggunakan Docker & Docker Compose
-Jika VPS kamu sudah terinstall Docker:
 
+Jika VPS kamu sudah terinstall Docker:
 1. **Pastikan file `.env` dan `.GOPAY_SESI_JANGAN_DIHAPUS.json` sudah ada.**
 2. **Jalankan container di background:**
+
    ```bash
    docker compose up -d
    ```
 3. **Cek status & log container:**
+
    ```bash
    docker compose logs -f
    ```
@@ -208,30 +220,35 @@ Bagi kamu yang menggunakan **cPanel Shared Hosting / Web Hosting** (seperti Niag
 > Jangan memilih Node.js 20.x di cPanel karena fitur internal WebAssembly (`undici`) di Node 20 akan menyebabkan error `RangeError: WebAssembly.instantiate(): Out of memory` akibat pembatasan Virtual Memory CloudLinux cPanel. **Gunakan versi Node.js 18.x.**
 
 ### 📍 Langkah 1: Upload File ke cPanel
+
 1. Masuk ke **cPanel** -> **File Manager**.
 2. Buat folder baru (misal `gopay-gateway`) atau upload seluruh source code ke folder yang diinginkan.
 3. Pastikan file `.env` sudah ada dan diisi (salin dari `.env.example`).
    - ⚠️ **Perhatian Port:** Jangan menyetel `PORT=443` atau `PORT=80` di `.env`. Biarkan `PORT=3000` atau hapus baris `PORT`. cPanel akan secara otomatis menangani SSL HTTPS domain kamu.
 
 ### 📍 Langkah 2: Setup Aplikasi di cPanel
+
 1. Buka menu **Setup Node.js App** di cPanel.
 2. Klik **Create Application**.
 3. Isi konfigurasi sebagai berikut:
-   - **Node.js version:** Pilih **`18.x`** *(Wajib 18.x)*
+   - **Node.js version:** Pilih **`18.x`** _(Wajib 18.x)_
    - **Application mode:** `Production`
    - **Application root:** Nama folder tempat upload (contoh: `gopay-gateway`)
    - **Application URL:** Domain/subdomain kamu (contoh: `gopay.domainkamu.com`)
-   - **Application startup file:** **`server.js`** *(Wajib diubah dari default app.js)*
+   - **Application startup file:** **`server.js`** _(Wajib diubah dari default app.js)_
 4. Klik **Create** di pojok kanan atas.
 
 ### 📍 Langkah 3: Install Dependencies & Login OTP via Terminal cPanel
+
 1. Masuk ke menu **Terminal** di cPanel (atau SSH ke cPanel).
 2. Copy perintah pengaktifan virtualenv dari bagian atas halaman **Setup Node.js App** (contoh: `source /home/user/nodevenv/gopay-gateway/18/bin/activate && cd /home/user/gopay-gateway`).
 3. Jalankan script otomatisasi `setup.sh`:
+
    ```bash
    bash setup.sh
    ```
-   *Script ini akan otomatis meng-install dependencies dan memandu login OTP GoPay (`node login.js`).*
+
+   _Script ini akan otomatis meng-install dependencies dan memandu login OTP GoPay (`node login.js`)._
 
 4. Kembali ke menu **Setup Node.js App** di cPanel, lalu klik tombol **Restart**.
 5. Cek aplikasi di browser: `https://gopay.domainkamu.com/health`.
@@ -247,24 +264,29 @@ Bagi kamu yang menggunakan **Pterodactyl Panel** (panel hosting yang umum diguna
 > Karena konsol web Pterodactyl terkadang kurang responsif untuk input interaktif terminal (`node login.js`), disarankan untuk **melakukan login OTP 1x di PC lokal / VPS terlebih dahulu**, kemudian mengunggah file `.GOPAY_SESI_JANGAN_DIHAPUS.json` yang dihasilkan ke File Manager Pterodactyl.
 
 ### 📍 Langkah 1: Persiapkan Sesi Login (Lokal / VPS)
+
 1. Jalankan `npm install` dan `node login.js` di komputer lokal atau VPS kamu.
 2. Masukkan nomor HP GoBiz & kode OTP 4-digit.
 3. Setelah berhasil login, file `.GOPAY_SESI_JANGAN_DIHAPUS.json` akan otomatis dibuat.
 
 ### 📍 Langkah 2: Upload Files ke Pterodactyl
+
 1. Buka **Pterodactyl Panel** -> Pilih Server kamu -> Masuk ke **File Manager**.
 2. Upload seluruh file project (termasuk `server.js`, `sessionManager.js`, `package.json`, dll).
 3. Upload juga file `.GOPAY_SESI_JANGAN_DIHAPUS.json` yang sudah dibuat pada Langkah 1.
 4. Buat file `.env` di File Manager Pterodactyl:
+
    ```env
    PORT=3000
    API_KEY=API_KEY_RAHASIA_KAMU
    QRIS_STATIC=00020101021126...
    GOPAY_MERCHANT_ID=MERCHANT_ID_KAMU
    ```
-   *(Pterodactyl akan menyesuaikan port secara otomatis sesuai alokasi port server kamu).*
+
+   _(Pterodactyl akan menyesuaikan port secara otomatis sesuai alokasi port server kamu)._
 
 ### 📍 Langkah 3: Konfigurasi Startup & Console
+
 1. Masuk ke menu **Startup** di Pterodactyl Panel:
    - Set **Startup Command**: `node server.js` atau `npm start`
    - Set **JS File / Entry File**: `server.js`
@@ -273,6 +295,7 @@ Bagi kamu yang menggunakan **Pterodactyl Panel** (panel hosting yang umum diguna
 4. Klik **Start** / **Restart** server.
 
 ### 📍 Langkah 4: Cek Status Server
+
 Lihat log pada **Console**. Jika berhasil, akan muncul:
 ```text
 [SERVER] Gateway running on port 3000
@@ -294,6 +317,7 @@ Query    : ?api_key=<API_KEY>
 ---
 
 ### `GET /token-status` — Cek Status Sesi Token
+
 Memverifikasi apakah token GoPay Merchant masih aktif dan valid.
 ```http
 GET http://vps-ip:3000/token-status?api_key=RAHASIA
@@ -312,14 +336,15 @@ GET http://vps-ip:3000/token-status?api_key=RAHASIA
 ---
 
 ### `GET /create-qris` — Buat QRIS Dinamis
-Membuat QRIS nominal custom dari QRIS statis secara *in-memory* (lokal). QR aktif selama **5 menit**.
+
+Membuat QRIS nominal custom dari QRIS statis secara _in-memory_ (lokal). QR aktif selama **5 menit**.
 ```http
 GET http://vps-ip:3000/create-qris?amount=25000&api_key=RAHASIA
 ```
-| Parameter | Tipe | Keterangan |
-|---|---|---|
-| `amount` | `number` | Nominal transaksi dalam Rupiah (wajib) |
-| `api_key` | `string` | API Key kamu |
+| Parameter | Tipe     | Keterangan                             |
+| --------- | -------- | -------------------------------------- |
+| `amount`  | `number` | Nominal transaksi dalam Rupiah (wajib) |
+| `api_key` | `string` | API Key kamu                           |
 
 **Respon Sukses:**
 ```json
@@ -341,8 +366,9 @@ GET http://vps-ip:3000/create-qris?amount=25000&api_key=RAHASIA
 > Simpan `trx_id` yang dikembalikan. Gunakan nilai ini sebagai parameter `trx_id` saat memanggil `/check-payment` agar dua payment dengan nominal sama tidak saling klaim transaksi satu sama lain.
 
 ### `GET /qr/:id` — Halaman Pembayaran QRIS Interaktif (Web UI)
+
 Membuka halaman HTML pembayaran QRIS yang interaktif. Dilengkapi dengan:
-- **Tombol Cek Manual ("🔄 Cek Status Pembayaran")** — *(Paling Aman / Anti-Banned)* Pengecekan 1x klik instan setelah pembeli transfer.
+- **Tombol Cek Manual ("🔄 Cek Status Pembayaran")** — _(Paling Aman / Anti-Banned)_ Pengecekan 1x klik instan setelah pembeli transfer.
 - **Hitung Mundur Kedaluwarsa 5 Menit** — Countdown visual batas waktu transaksi.
 - **Checkbox Toggle Auto-Polling (Opsional)** — Off secara default untuk proteksi rate-limit. Jika dicentang pembeli, mengecek status setiap 8 detik di background.
 - Format gambar mentah bisa diakses dengan query `?format=raw` atau `?raw=1`.
@@ -350,6 +376,7 @@ Membuka halaman HTML pembayaran QRIS yang interaktif. Dilengkapi dengan:
 ---
 
 ### `GET /api/qr-status/:id` — Status Check Public (Tanpa API Key)
+
 Endpoint public yang digunakan oleh halaman HTML `/qr/:id` untuk memeriksa status pembayaran tanpa perlu mengekspos `API_KEY` di browser pembeli.
 
 ```http
@@ -359,16 +386,17 @@ GET http://vps-ip:3000/api/qr-status/abc123xyz
 ---
 
 ### `GET /check-payment` — Cek Pembayaran Masuk (Backend / Server-to-Server)
+
 Mencari transaksi yang cocok berdasarkan nominal dan timestamp. Setiap transaksi hanya bisa diklaim 1x per `trx_id` (anti klaim ganda, termasuk untuk dua payment dengan nominal sama).
 ```http
 GET http://vps-ip:3000/check-payment?amount=25000&trx_id=TRX-A3F8K2M9&api_key=RAHASIA
 ```
-| Parameter | Tipe | Default | Keterangan |
-|---|---|---|---|
-| `amount` | `number` | — | Nominal transaksi yang dicari (wajib) |
-| `trx_id` | `string` | — | TRX-ID dari `/create-qris` — scope klaim agar tidak tabrakan dengan payment nominal sama (sangat direkomendasikan) |
-| `startTime` | `string` | 24 jam lalu | Timestamp ISO awal pencarian |
-| `api_key` | `string` | — | API Key kamu |
+| Parameter   | Tipe     | Default     | Keterangan                                                                                                         |
+| ----------- | -------- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
+| `amount`    | `number` | —           | Nominal transaksi yang dicari (wajib)                                                                              |
+| `trx_id`    | `string` | —           | TRX-ID dari `/create-qris` — scope klaim agar tidak tabrakan dengan payment nominal sama (sangat direkomendasikan) |
+| `startTime` | `string` | 24 jam lalu | Timestamp ISO awal pencarian                                                                                       |
+| `api_key`   | `string` | —           | API Key kamu                                                                                                       |
 
 **Respon Sukses (Lunas):**
 ```json
@@ -389,18 +417,20 @@ GET http://vps-ip:3000/check-payment?amount=25000&trx_id=TRX-A3F8K2M9&api_key=RA
 ---
 
 ### `GET /transactions` — Riwayat Mutasi Transaksi
+
 ```http
 GET http://vps-ip:3000/transactions?api_key=RAHASIA
 ```
-| Parameter | Tipe | Default | Keterangan |
-|---|---|---|---|
-| `startTime` | `unix timestamp` | 3 hari lalu | Waktu awal (dalam detik) |
-| `endTime` | `unix timestamp` | Sekarang | Waktu akhir (dalam detik) |
-| `pageSize` | `number` | `20` | Jumlah transaksi yang diambil |
+| Parameter   | Tipe             | Default     | Keterangan                    |
+| ----------- | ---------------- | ----------- | ----------------------------- |
+| `startTime` | `unix timestamp` | 3 hari lalu | Waktu awal (dalam detik)      |
+| `endTime`   | `unix timestamp` | Sekarang    | Waktu akhir (dalam detik)     |
+| `pageSize`  | `number`         | `20`        | Jumlah transaksi yang diambil |
 
 ---
 
 ### `GET /api/logs` — Log Aktivitas Gateway
+
 ```http
 GET http://vps-ip:3000/api/logs?api_key=RAHASIA
 ```
@@ -411,9 +441,9 @@ GET http://vps-ip:3000/api/logs?api_key=RAHASIA
 
 Gateway ini sangat fleksibel untuk diintegrasikan ke sistem toko online (PHP, Laravel, Node.js, Python, WordPress, dll):
 
-| Metode | Contoh Pemanggilan |
-|---|---|
-| **GET (URL Query)** | `http://vps-ip:3000/create-qris?amount=25000&api_key=RAHASIA` |
+| Metode               | Contoh Pemanggilan                                                        |
+| -------------------- | ------------------------------------------------------------------------- |
+| **GET (URL Query)**  | `http://vps-ip:3000/create-qris?amount=25000&api_key=RAHASIA`             |
 | **POST (JSON Body)** | `POST /create-qris` dengan Body: `{"amount": 25000}` & Header `X-Api-Key` |
 
 ---
