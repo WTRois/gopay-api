@@ -1,9 +1,17 @@
 const { escapeHtml } = require("../utils/validation");
 
-function renderCheckoutHtml({ qrisId, formattedAmount, qrImageUrl, expiresTimestamp }) {
+function renderCheckoutHtml({
+  qrisId,
+  formattedAmount,
+  qrImageUrl,
+  expiresTimestamp,
+  initialStatus = "PENDING",
+  initialTransaction = null,
+}) {
   const safeAmount = escapeHtml(formattedAmount);
   const safeQrisId = escapeHtml(qrisId);
   const safeExpires = Number(expiresTimestamp) || 0;
+  const isInitiallyPaid = initialStatus === "PAID";
 
   return `<!DOCTYPE html>
 <html lang="id">
@@ -27,7 +35,7 @@ function renderCheckoutHtml({ qrisId, formattedAmount, qrImageUrl, expiresTimest
         .status-pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
         .status-paid { background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
         .status-expired { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-        .btn-check { width: 100%; background: #0284c7; hover: #0369a1; color: #ffffff; border: none; font-weight: 600; font-size: 15px; padding: 14px; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.3); }
+        .btn-check { width: 100%; background: #0284c7; color: #ffffff; border: none; font-weight: 600; font-size: 15px; padding: 14px; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.3); }
         .btn-check:hover { background: #0369a1; transform: translateY(-1px); }
         .btn-check:disabled { background: #475569; cursor: not-allowed; opacity: 0.7; transform: none; }
         .toggle-box { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 13px; color: #94a3b8; margin-top: 16px; }
@@ -54,29 +62,29 @@ function renderCheckoutHtml({ qrisId, formattedAmount, qrImageUrl, expiresTimest
 
         <div class="timer-box">
             <span>Batas Waktu Pembayaran</span>
-            <span class="timer-val" id="timer-text">05:00</span>
+            <span class="timer-val" id="timer-text">${isInitiallyPaid ? "LUNAS" : "05:00"}</span>
         </div>
 
-        <div class="status-badge status-pending" id="status-badge">
-            <span id="status-icon">🟡</span>
-            <span id="status-text">Menunggu Pembayaran</span>
+        <div class="status-badge ${isInitiallyPaid ? "status-paid" : "status-pending"}" id="status-badge">
+            <span id="status-icon">${isInitiallyPaid ? "🟢" : "🟡"}</span>
+            <span id="status-text">${isInitiallyPaid ? "Pembayaran Berhasil / Lunas" : "Menunggu Pembayaran"}</span>
         </div>
 
-        <button class="btn-check" id="btn-check" onclick="checkStatusManual()">
+        <button class="btn-check" id="btn-check" onclick="checkStatusManual()" style="${isInitiallyPaid ? "display: none;" : ""}">
             <span class="spinner" id="btn-spinner"></span>
             <span id="btn-label">🔄 Cek Status Pembayaran</span>
         </button>
 
-        <div class="toggle-box">
+        <div class="toggle-box" id="toggle-container" style="${isInitiallyPaid ? "display: none;" : ""}">
             <input type="checkbox" id="chk-auto" onchange="handleAutoPollChange(this)">
             <label for="chk-auto">Cek otomatis setiap 8 detik (Opsional)</label>
         </div>
 
-        <div class="success-box" id="success-details">
+        <div class="success-box" id="success-details" style="${isInitiallyPaid ? "display: block;" : ""}">
             <strong>✅ Pembayaran Berhasil!</strong>
-            <p>Order ID: <span id="tx-order"></span></p>
-            <p>Sumber: <span id="tx-issuer"></span></p>
-            <p>Waktu: <span id="tx-time"></span></p>
+            <p>Order ID: <span id="tx-order">${escapeHtml(initialTransaction?.order_id || initialTransaction?.transaction_id || "-")}</span></p>
+            <p>Sumber: <span id="tx-issuer">${escapeHtml(initialTransaction?.payer_issuer || "GoPay / Bank")}</span></p>
+            <p>Waktu: <span id="tx-time">${escapeHtml(initialTransaction?.transaction_time || "-")}</span></p>
         </div>
     </div>
 
@@ -84,9 +92,10 @@ function renderCheckoutHtml({ qrisId, formattedAmount, qrImageUrl, expiresTimest
         const qrisId = ${JSON.stringify(safeQrisId)};
         const expiresTimestamp = ${safeExpires};
         let isChecking = false;
-        let isPaid = false;
+        let isPaid = ${isInitiallyPaid ? "true" : "false"};
         let isExpired = false;
         let pollTimer = null;
+        let countdownInterval = null;
 
         function updateCountdown() {
             if (isPaid) return;
@@ -94,15 +103,21 @@ function renderCheckoutHtml({ qrisId, formattedAmount, qrImageUrl, expiresTimest
             const diff = expiresTimestamp - now;
 
             if (diff <= 0) {
-                isExpired = true;
                 document.getElementById('timer-text').innerText = "00:00";
-                document.getElementById('status-badge').className = "status-badge status-expired";
-                document.getElementById('status-icon').innerText = "🔴";
-                document.getElementById('status-text').innerText = "QRIS Kedaluwarsa";
-                document.getElementById('btn-check').disabled = true;
-                document.getElementById('chk-auto').disabled = true;
-                clearInterval(countdownInterval);
-                stopAutoPoll();
+                if (!isChecking && !isExpired) {
+                    checkStatusManual().then(() => {
+                        if (!isPaid) {
+                            isExpired = true;
+                            document.getElementById('status-badge').className = "status-badge status-expired";
+                            document.getElementById('status-icon').innerText = "🔴";
+                            document.getElementById('status-text').innerText = "QRIS Kedaluwarsa";
+                            document.getElementById('btn-check').disabled = true;
+                            document.getElementById('chk-auto').disabled = true;
+                            if (countdownInterval) clearInterval(countdownInterval);
+                            stopAutoPoll();
+                        }
+                    });
+                }
                 return;
             }
 
@@ -112,20 +127,17 @@ function renderCheckoutHtml({ qrisId, formattedAmount, qrImageUrl, expiresTimest
                 String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
         }
 
-        const countdownInterval = setInterval(updateCountdown, 1000);
-        updateCountdown();
-
         async function checkStatusManual() {
-            if (isChecking || isPaid || isExpired) return;
+            if (isChecking || isPaid) return;
             isChecking = true;
 
             const btn = document.getElementById('btn-check');
             const spinner = document.getElementById('btn-spinner');
             const label = document.getElementById('btn-label');
 
-            btn.disabled = true;
-            spinner.style.display = 'inline-block';
-            label.innerText = 'Memeriksa...';
+            if (btn) btn.disabled = true;
+            if (spinner) spinner.style.display = 'inline-block';
+            if (label) label.innerText = 'Memeriksa...';
 
             try {
                 const res = await fetch('/api/qr-status/' + qrisId);
@@ -134,8 +146,18 @@ function renderCheckoutHtml({ qrisId, formattedAmount, qrImageUrl, expiresTimest
                 if (data.success && data.paid) {
                     onPaymentSuccess(data.transaction);
                 } else if (data.status === 'EXPIRED') {
-                    isExpired = true;
-                    updateCountdown();
+                    if (!isPaid) {
+                        isExpired = true;
+                        document.getElementById('timer-text').innerText = "00:00";
+                        document.getElementById('status-badge').className = "status-badge status-expired";
+                        document.getElementById('status-icon').innerText = "🔴";
+                        document.getElementById('status-text').innerText = "QRIS Kedaluwarsa";
+                        if (btn) btn.disabled = true;
+                        const chk = document.getElementById('chk-auto');
+                        if (chk) chk.disabled = true;
+                        if (countdownInterval) clearInterval(countdownInterval);
+                        stopAutoPoll();
+                    }
                 } else {
                     document.getElementById('status-text').innerText = "Belum Dibayar (Dicoba lagi...)";
                     setTimeout(() => {
@@ -148,31 +170,33 @@ function renderCheckoutHtml({ qrisId, formattedAmount, qrImageUrl, expiresTimest
                 console.error("Gagal periksa status:", err);
             } finally {
                 isChecking = false;
-                if (!isPaid && !isExpired) {
+                if (!isPaid && !isExpired && btn) {
                     btn.disabled = false;
                 }
-                spinner.style.display = 'none';
-                label.innerText = '🔄 Cek Status Pembayaran';
+                if (spinner) spinner.style.display = 'none';
+                if (label) label.innerText = '🔄 Cek Status Pembayaran';
             }
         }
 
         function onPaymentSuccess(tx) {
             isPaid = true;
             stopAutoPoll();
-            clearInterval(countdownInterval);
+            if (countdownInterval) clearInterval(countdownInterval);
 
+            document.getElementById('timer-text').innerText = "LUNAS";
             document.getElementById('status-badge').className = "status-badge status-paid";
             document.getElementById('status-icon').innerText = "🟢";
             document.getElementById('status-text').innerText = "Pembayaran Berhasil / Lunas";
 
             const btn = document.getElementById('btn-check');
-            btn.disabled = true;
-            btn.style.display = 'none';
+            if (btn) btn.style.display = 'none';
+            const toggle = document.getElementById('toggle-container');
+            if (toggle) toggle.style.display = 'none';
 
             if (tx) {
                 document.getElementById('tx-order').innerText = tx.order_id || tx.transaction_id || '-';
                 document.getElementById('tx-issuer').innerText = tx.payer_issuer || 'GoPay / Bank';
-                document.getElementById('tx-time').innerText = tx.transaction_time ? new Date(tx.transaction_time).toLocaleString('id-ID') : '-';
+                document.getElementById('tx-time').innerText = tx.transaction_time || '-';
                 document.getElementById('success-details').style.display = 'block';
             }
         }
@@ -201,8 +225,13 @@ function renderCheckoutHtml({ qrisId, formattedAmount, qrImageUrl, expiresTimest
             }
         }
 
-        if (document.getElementById('chk-auto').checked) {
-            startAutoPoll();
+        if (!isPaid) {
+            countdownInterval = setInterval(updateCountdown, 1000);
+            updateCountdown();
+            checkStatusManual();
+            if (document.getElementById('chk-auto').checked) {
+                startAutoPoll();
+            }
         }
     </script>
 </body>

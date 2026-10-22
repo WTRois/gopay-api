@@ -121,6 +121,8 @@ router.get("/qr/:id", async (req, res) => {
     formattedAmount,
     qrImageUrl,
     expiresTimestamp,
+    initialStatus: qris.status,
+    initialTransaction: qris.transaction,
   });
 
   res.send(html);
