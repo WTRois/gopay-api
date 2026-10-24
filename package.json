@@ -1,7 +1,7 @@
 {
   "name": "gopay-merchant-gateway",
   "version": "1.0.0",
-  "description": "GoPay Merchant Payment Gateway & QRIS Verification API (Stateless)",
+  "description": "GoPay Merchant Payment Gateway & QRIS Verification API (Bun + SQLite Persisten)",
   "main": "server.js",
   "scripts": {
     "start": "bun run server.js",

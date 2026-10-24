@@ -66,20 +66,40 @@ async function verifyPayment(
   userAgent = null,
   qrisId = null,
 ) {
-  // 1. Idempotency check: If payment is already marked PAID, return transaction immediately
+  // 1. Idempotency & state check: If payment is already marked PAID, return transaction immediately
+  let targetPayment = null;
   if (qrisId) {
-    const payment =
+    targetPayment =
       paymentRepository.getPayment(qrisId) || paymentRepository.getPaymentByTrxId(qrisId);
-    if (payment && payment.status === "PAID" && payment.transaction) {
-      return payment.transaction;
+    if (targetPayment) {
+      if (targetPayment.status === "PAID" && targetPayment.transaction) {
+        return targetPayment.transaction;
+      }
+      // If target payment is already EXPIRED, do not verify or claim
+      const isPastExpiry =
+        targetPayment.expiresAt && Date.now() > new Date(targetPayment.expiresAt).getTime();
+      if (targetPayment.status === "EXPIRED" || isPastExpiry) {
+        return null;
+      }
     }
   }
 
   const merchantId = merchantIdOverride || config.gopayMerchantId || "";
   const now = new Date();
-  const startTimeISO = startTime
-    ? new Date(startTime).toISOString()
-    : new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+  // Calculate strict time window bounded by order creation and expiration
+  const effectiveStartTime = targetPayment?.createdAt
+    ? new Date(targetPayment.createdAt)
+    : startTime
+      ? new Date(startTime)
+      : new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const filterStartTimeMs = effectiveStartTime.getTime() - 60000; // 60s clock skew tolerance
+  const filterEndTimeMs = targetPayment?.expiresAt
+    ? new Date(targetPayment.expiresAt).getTime() + 60000 // 60s post-expiry grace
+    : now.getTime() + 60000;
+
+  const startTimeISO = effectiveStartTime.toISOString();
   const endTimeISO = now.toISOString();
 
   const params = {
@@ -96,7 +116,6 @@ async function verifyPayment(
   const rawTransactions =
     responseData?.transactions || responseData?.data?.transactions || responseData?.data || [];
   const targetAmount = parseInt(amount, 10);
-  const filterStartTimeMs = startTime ? new Date(startTime).getTime() : 0;
 
   for (const tx of rawTransactions) {
     const status = (tx.transaction_status || tx.status || "").toUpperCase();
@@ -118,9 +137,18 @@ async function verifyPayment(
     ).getTime();
     const txId = tx.id || tx.order_id || tx.wallstreet_transaction_id;
 
-    if (txAmount === targetAmount && txTimestamp >= filterStartTimeMs) {
+    // Strict time-window and amount matching:
+    // Must match nominal and fall strictly within the allowed creation/expiry window of this order
+    if (
+      txAmount === targetAmount &&
+      txTimestamp >= filterStartTimeMs &&
+      txTimestamp <= filterEndTimeMs
+    ) {
       // Atomic claim via SQLite transaction
-      const claimResult = paymentRepository.claimTransaction(txId, qrisId || "manual-check");
+      const claimResult = paymentRepository.claimTransaction(
+        txId,
+        targetPayment?.id || qrisId || "manual-check",
+      );
 
       if (claimResult.claimed) {
         const transactionDetail = {
@@ -133,12 +161,14 @@ async function verifyPayment(
           status: status || "SETTLEMENT",
         };
 
-        if (qrisId) {
-          const payment =
-            paymentRepository.getPayment(qrisId) || paymentRepository.getPaymentByTrxId(qrisId);
-          if (payment) {
+        if (targetPayment || qrisId) {
+          const paymentToUpdate =
+            targetPayment ||
+            paymentRepository.getPayment(qrisId) ||
+            paymentRepository.getPaymentByTrxId(qrisId);
+          if (paymentToUpdate) {
             paymentRepository.updatePaymentStatus(
-              payment.id,
+              paymentToUpdate.id,
               "PAID",
               new Date(),
               txId,
@@ -148,7 +178,10 @@ async function verifyPayment(
         }
 
         if (claimResult.isNew) {
-          logActivity("INFO", `TRX ${txId} berhasil diklaim oleh QRIS ${qrisId || "manual-check"}`);
+          logActivity(
+            "INFO",
+            `TRX ${txId} berhasil diklaim oleh QRIS ${targetPayment?.id || qrisId || "manual-check"}`,
+          );
         }
         return transactionDetail;
       }

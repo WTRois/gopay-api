@@ -1,383 +1,181 @@
-# GoPay Merchant Gateway
+# GoPay Merchant Gateway & QRIS Verification API
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Bun-1.4.3-black?logo=bun&logoColor=white" alt="Bun v1.4.3" />
-  <img src="https://img.shields.io/badge/SQLite-WAL%20Mode-003B57?logo=sqlite&logoColor=white" alt="SQLite WAL" />
-  <img src="https://img.shields.io/badge/Express-4.x-000000?logo=express&logoColor=white" alt="Express" />
-  <img src="https://img.shields.io/badge/Auth-OTP%20Based-00AED9" alt="OTP Auth" />
-  <img src="https://img.shields.io/badge/QRIS-EMVCo%20Local-red" alt="QRIS" />
-  <img src="https://img.shields.io/badge/Linter-Biome-60A5FA?logo=biome&logoColor=white" alt="Biome" />
-  <img src="https://img.shields.io/badge/Deploy-Docker%20%7C%20VPS%20%7C%20PM2-orange" alt="Deploy Options" />
-</p>
-
-<p align="center">
-  <a href="https://t.me/ahmadzakiyo">
-    <img src="https://img.shields.io/badge/Telegram-Chat%20Owner-2CA5E0?logo=telegram&logoColor=white&style=for-the-badge" alt="Chat Owner" />
-  </a>
-  &nbsp;
-  <a href="https://t.me/nuxysproject">
-    <img src="https://img.shields.io/badge/Telegram-Channel%20Updates-2CA5E0?logo=telegram&logoColor=white&style=for-the-badge" alt="Channel" />
-  </a>
-</p>
-
-High-performance, self-hosted API Gateway berbasis **Bun v1.4.3** untuk otomatisasi verifikasi transaksi dan cetak QRIS dinamis dari akun **GoPay / GoFood Merchant** Anda.
+Gateway pembayaran mandiri berbasis **Bun** dan **SQLite** yang mengubah QRIS statis merchant GoPay menjadi **QRIS Dinamis** dengan verifikasi pembayaran otomatis langsung ke server Gojek/GoPay tanpa pihak ketiga (payment gateway berbayar).
 
 ---
 
-> [!NOTE]
-> 💬 **HUBUNGI OWNER & BERGABUNG CHANNEL:**
-> - 👤 **Developer / Owner:** [@ahmadzakiyo](https://t.me/ahmadzakiyo)
-> - 📢 **Channel Update & Project:** [@nuxysproject](https://t.me/nuxysproject)
+## 💡 Tentang Aplikasi Ini
 
-> [!TIP]
-> 📣 **PENGUMUMAN & UPDATE TERBARU: Migrasi ke Bun v1.4.3 & SQLite WAL**
-> Gateway ini kini berjalan di atas **Bun v1.4.3** dengan database persisten bawaan (`bun:sqlite` WAL mode), rendering QR lokal tanpa dependensi API eksternal, proteksi single-flight request coalescing, dan pembaruan token otomatis di background setiap 6 jam.
+Jika kamu memiliki toko atau aplikasi online dan ingin menerima pembayaran via QRIS GoPay, biasanya kamu harus mendaftar ke Payment Gateway pihak ketiga yang memotong biaya admin (fee per transaksi).
 
-> [!CAUTION]
-> 🚨 **PERSYARATAN PENYIMPANAN PERSISTEN**
-> Gateway ini membutuhkan penyimpanan permanen untuk file sesi (`.GOPAY_SESI_JANGAN_DIHAPUS.json`) dan database transaksi SQLite (`./data/payments.sqlite`).
-> **DILARANG MENGGUNAKAN SERVERLESS EPHEMERAL** (seperti Render Free tier atau Vercel) karena container akan sleep dan menghapus file sesi & database lokal.
+Aplikasi ini adalah **solusi mandiri**:
+1. Mengubah kode QRIS Statis toko fisik kamu menjadi QRIS Dinamis (nominal pembayaran terkunci otomatis di aplikasi pembeli).
+2. Mengecek mutasi uang masuk secara otomatis ke akun GoPay Merchant kamu.
+3. Mengonfirmasi pembayaran lunas secara instan dan aman (anti dobel klaim).
 
-> [!WARNING]
-> ⚠️ **DISCLAIMER:**
-> Project ini **tidak berafiliasi** dengan PT GoTo Gojek Tokopedia Tbk / GoPay. Seluruh data berjalan 100% aman di server Anda sendiri tanpa dikirim ke pihak ketiga.
+Didesain ringan, cepat, dan mudah dipahami bahkan oleh junior developer.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Runtime**: [Bun](https://bun.sh/) (eksekusi JavaScript super cepat)
+- **Web Framework**: [Express.js](https://expressjs.com/) (routing HTTP & middleware)
+- **Database**: [SQLite](https://bun.sh/docs/api/sqlite) via `bun:sqlite` (penyimpanan persisten berbasis file dengan mode WAL yang cepat & aman dari race-condition)
+- **QR Generator**: `qrcode` (membuat QR code langsung di lokal server tanpa API eksternal)
+- **HTTP Client**: `axios` (komunikasi ke upstream API Gojek)
+- **Linter & Formatter**: [Biome](https://biomejs.dev/)
 
 ---
 
 ## ✨ Fitur Utama
 
-- 🚀 **Bun v1.4.3 Native Runtime** — Performa tinggi, konsumsi memori rendah (~4.5MB RSS vs ~45MB di Node), dan startup instan.
-- 🗄️ **Persistent Storage (SQLite WAL)** — Menggunakan `bun:sqlite` dengan Write-Ahead Logging dan transaksi atomic anti-double-claim (`TRX-ID` scope).
-- 🛡️ **Upstream Request Deduplication** — Single-flight request coalescing dengan cache TTL 5 detik untuk mencegah spam dan rate-limit upstream GoPay.
-- 🧾 **QRIS Dinamis 100% Lokal** — Generate QRIS dinamis (EMVCo TLV + CRC16) dan render PNG/DataURL secara lokal menggunakan library `qrcode` (bebas kebocoran ke API pihak ketiga).
-- 🔐 **Login OTP Terminal** — Login resmi via SMS/WA (`bun run login`) menggunakan nomor HP GoBiz.
-- 🔄 **Auto-Refresh Token** — Token diperbarui otomatis di background setiap 6 jam tanpa perlu login ulang.
-- 📱 **Halaman Checkout Interaktif** — UI checkout modern dengan timer countdown 5 menit, manual check, dan auto-polling terkontrol.
-- 🔒 **Proteksi API Key & Endpoint Public** — Proteksi API Key untuk endpoint sensitif dan endpoint status publik aman untuk frontend browser.
-- 🐳 **Docker Multi-Stage Non-Root** — Image container ramping (~52 MB) berbasis `oven/bun:1.4.3-alpine` dengan user non-root `bun`.
+- **Dynamic QRIS Generator**: Mengubah string QRIS statis standar EMVCo menjadi dinamis dengan nominal yang ditentukan, lengkap dengan kalkulasi ulang checksum CRC16.
+- **Halaman Checkout Interaktif**: Web checkout bawaan berdesain modern (Dark Mode), responsif, dilengkapi countdown timer dan auto-polling status pembayaran.
+- **Local QR Engine**: Gambar QR dibuat langsung di server (PNG Buffer / Base64 Data URL) tanpa bergantung pada layanan pihak ketiga.
+- **Verifikasi Pembayaran Otomatis**: Mendeteksi dana masuk secara real-time berdasarkan nominal, rentang waktu transaksi, dan status transaksi.
+- **Anti Double-Claim**: Menggunakan SQLite atomic transaction; satu transaksi upstream Gojek tidak dapat diklaim lebih dari satu kali.
+- **Single-Flight & Smart Caching**: Mencegah request berlebihan ke upstream Gojek jika ada banyak request polling di waktu yang bersamaan.
+- **Auto-Refresh Sesi**: Memperbarui token GoPay secara berkala di latar belakang agar layanan tetap aktif tanpa login ulang manual terus-menerus.
+- **Keamanan**: Dilindungi autentikasi `x-api-key`, validasi input nominal, proteksi XSS pada tampilan, dan pembatasan ukuran payload HTTP.
 
 ---
 
-## 💻 Persyaratan Sistem
+## 📐 Arsitektur Sistem
 
-- **Bun ≥ 1.4.0** (Direkomendasikan **Bun v1.4.3**) atau **Docker Engine ≥ 24.x**
-- Akun GoBiz / GoFood Merchant aktif terdaftar nomor HP
-- QRIS statis dari aplikasi GoBiz
+Aplikasi menggunakan arsitektur berlapis (_layered architecture_) yang memisahkan tanggung jawab kode:
+
+```mermaid
+graph TD
+    Client[Klien / Pembeli / Frontend] -->|HTTP Request| App[Express App & Middleware]
+    App --> Auth[API Key Auth & Validator]
+    Auth --> Routes[Routes Layer]
+
+    subgraph "Application Core"
+        Routes --> QrisService[QRIS Service\nEMVCo Parser & QR Generator]
+        Routes --> PaymentService[Payment Service\nVerifikasi & Klaim Transaksi]
+        Routes --> TxService[Transaction Service\nRiwayat Mutasi]
+        PaymentService --> UpstreamClient[Upstream Client\nCache & Single-Flight]
+        PaymentService --> PaymentRepo[Payment Repository\nCRUD & Atomic Lock]
+    end
+
+    subgraph "External & Storage"
+        PaymentRepo --> SQLite[(SQLite Database\nWAL Mode)]
+        UpstreamClient --> SessionService[Session Service]
+        SessionService --> GojekAPI[API Gojek Upstream]
+    end
+```
 
 ---
 
-## 🛠️ Quick Start (Pengujian Lokal)
+## 👥 User Story
 
-### 1. Clone & Install Dependencies
+### 1. Pembeli (Customer)
 
-```bash
-git clone https://github.com/ahmadzakiyox/gopay-api-gateaway.git
-cd gopay-api-gateaway
-bun install
+> _"Sebagai pembeli, saya ingin memilih produk, melihat kode QRIS dengan nominal yang sudah pas, membayarnya dengan GoPay/BCA/Dana/e-wallet apa saja, dan melihat status di layar otomatis berubah menjadi 'Lunas' tanpa perlu upload bukti transfer."_
+
+### 2. Pemilik Toko / Merchant
+
+> _"Sebagai merchant, saya ingin menerima pembayaran QRIS langsung ke akun GoPay toko saya tanpa potongan MDR perantara tambahan, dan sistem toko saya langsung tahu saat dana masuk."_
+
+### 3. Developer / Sistem Backend
+
+> _"Sebagai developer, saya ingin memanggil satu endpoint `/create-qris` untuk mendapatkan link bayar, lalu memverifikasi status pembayaran baik lewat webhook/polling `/check-payment` secara aman dan andal."_
+
+---
+
+## 🔄 Cara Kerja Aplikasi
+
+Berikut alur lengkap dari saat pesanan dibuat hingga pembayaran terverifikasi:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Pembeli
+    participant Frontend as Website Toko / Checkout
+    participant Gateway as GoPay API Gateway
+    participant SQLite as Database SQLite
+    participant Gojek as Server Gojek/GoPay
+
+    Frontend->>Gateway: POST /create-qris (nominal: Rp 50.000)
+    Gateway->>Gateway: Inject tag nominal (Tag 54) & hitung CRC16
+    Gateway->>SQLite: Simpan status PENDING & waktu kedaluwarsa (5 menit)
+    Gateway-->>Frontend: Berikan URL halaman bayar (/qr/:id)
+    User->>Frontend: Buka halaman & scan QR via E-Wallet
+    User->>Gojek: Konfirmasi bayar di aplikasi E-Wallet
+
+    loop Polling Status Pembayaran
+        Frontend->>Gateway: GET /api/qr-status/:id
+        Gateway->>Gojek: Cek transaksi terbaru via UpstreamClient
+        Gojek-->>Gateway: Daftar mutasi masuk
+        Gateway->>Gateway: Cocokkan nominal & rentang waktu transaksi
+    end
+
+    Gateway->>SQLite: Klaim transaksi (Atomic Claim: upstream_trx_id)
+    SQLite-->>Gateway: Klaim Sukses (Unik)
+    Gateway->>SQLite: Update status pesanan jadi PAID
+    Gateway-->>Frontend: { success: true, paid: true, status: "PAID" }
+    Frontend-->>User: Tampilkan notifikasi "Pembayaran Berhasil!"
 ```
 
-### 2. Konfigurasi `.env`
+---
 
-Salin template `.env.example` ke `.env`:
-```bash
-cp .env.example .env
-```
+## 📡 Daftar Endpoint Utama
 
-Sesuaikan variabel di `.env`:
+| Method     | Endpoint             | Auth    | Deskripsi                                                |
+| ---------- | -------------------- | ------- | -------------------------------------------------------- |
+| `GET`      | `/health`            | Publik  | Cek kesehatan server                                     |
+| `GET`      | `/token-status`      | API Key | Cek apakah sesi login GoPay masih aktif                  |
+| `POST/GET` | `/create-qris`       | API Key | Membuat QRIS Dinamis baru                                |
+| `GET`      | `/qr/:id`            | Publik  | Halaman interaktif checkout pembayaran QRIS              |
+| `GET`      | `/qr/:id?format=raw` | Publik  | Stream gambar mentah QR dalam format PNG                 |
+| `GET`      | `/api/qr-status/:id` | Publik  | Cek status pembayaran satu QRIS (untuk polling frontend) |
+| `POST/GET` | `/check-payment`     | API Key | Verifikasi manual pembayaran (Server-to-Server)          |
+| `GET`      | `/transactions`      | API Key | Mengambil daftar riwayat transaksi mutasi GoPay          |
+| `GET`      | `/api/logs`          | API Key | Melihat riwayat log aktivitas gateway                    |
+
+> 💡 **Postman Collection**: File Postman Collection siap pakai tersedia di [`docs/gopay-api.postman_collection.json`](docs/gopay-api.postman_collection.json).
+
+---
+
+## 🚀 Panduan Memulai (Quick Start)
+
+### 1. Prasyarat
+
+- Pasang [Bun](https://bun.sh/) (versi 1.1 ke atas).
+
+### 2. Konfigurasi Lingkungan
+
+Duplikasi file `.env.example` menjadi `.env` dan lengkapi datanya:
 ```env
 PORT=3000
-API_KEY=YOUR_API_KEY_HERE
-QRIS_STATIC=00020101021126...
-GOPAY_MERCHANT_ID=YOUR_MERCHANT_ID_HERE
+API_KEY=rahasia_api_key_kamu
+QRIS_STATIC=00020101021126... (kode QRIS statis dari aplikasi GoBiz/GoPay Merchant)
+GOPAY_MERCHANT_ID=merch_xxxx
 PUBLIC_BASE_URL=http://localhost:3000
 ```
 
-### 3. Login OTP di Terminal (1 Kali Saja)
+### 3. Login Akun GoPay
 
+Jalankan skrip autentikasi untuk menyimpan sesi token:
 ```bash
 bun run login
 ```
+_Ikuti instruksi input nomor HP GoPay dan kode OTP di terminal._
 
-- Masukkan nomor HP GoBiz (contoh: `085119772671`).
-- Masukkan kode OTP (4 digit) dari SMS/WhatsApp.
-- Sesi login akan disimpan permanen di `.GOPAY_SESI_JANGAN_DIHAPUS.json`.
-
-### 4. Jalankan Gateway
+### 4. Jalankan Aplikasi
 
 ```bash
-# Mode Development (Hot Reload)
+# Mode pengembangan (auto-reload saat file berubah)
 bun run dev
 
-# Mode Production
+# Mode produksi
 bun run start
 ```
 
----
+### 5. Menjalankan Pengujian (Testing)
 
-## 🧪 Testing, Linting & Benchmark
-
-Project ini dilengkapi dengan suite pengujian unit dan integrasi berbasis `bun:test` serta linter Biome:
-
+Semua unit dan integration test dapat dijalankan dengan:
 ```bash
-# Menjalankan unit & integration test (37 suites, 126 assertions)
 bun test
-
-# Linting & Formatting Check (Biome)
-bun run check
-
-# Auto-format kode
-bun run format
-
-# Benchmark performa internal
-bun run benchmark
 ```
-
-Hasil benchmark menunjukkan gateway mampu melayani **> 5.000 RPS** dengan latensi p50 sebesar **0.07 ms** di Bun. Rincian lengkap tersedia di [docs/BENCHMARK.md](file:///Users/bidang4/Documents/GitHub/gopay-api/docs/BENCHMARK.md).
-
----
-
-## 🐳 Panduan Deploy Docker & Docker Compose
-
-Deploy menggunakan Docker Compose sangat direkomendasikan untuk production:
-
-```bash
-# 1. Pastikan .env dan sesi login sudah ada
-cp .env.example .env
-bun run login
-
-# 2. Jalankan container di background
-docker compose up -d --build
-
-# 3. Cek log container
-docker compose logs -f
-```
-
-Konfigurasi `docker-compose.yml` telah mengamankan direktori database `./data` dan file sesi melalui Docker volume mounts:
-
-```yaml
-services:
-  gopay-gateway:
-    build: .
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./data:/app/data
-      - ./.GOPAY_SESI_JANGAN_DIHAPUS.json:/app/.GOPAY_SESI_JANGAN_DIHAPUS.json
-```
-
----
-
-## 🚀 Panduan Deploy VPS (Systemd / PM2)
-
-### Metode A: PM2
-
-```bash
-# Jalankan menggunakan Bun via PM2
-pm2 start "bun run server.js" --name "gopay-gateway"
-pm2 save
-pm2 startup
-```
-
-### Metode B: Systemd Service (Linux Production Standard)
-
-Buat service file `/etc/systemd/system/gopay-gateway.service`:
-```ini
-[Unit]
-Description=GoPay Merchant Gateway (Bun)
-After=network.target
-
-[Service]
-Type=simple
-User=ubuntu
-WorkingDirectory=/home/ubuntu/gopay-api-gateaway
-ExecStart=/home/ubuntu/.bun/bin/bun run server.js
-Restart=always
-RestartSec=5
-EnvironmentFile=/home/ubuntu/gopay-api-gateaway/.env
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Aktifkan service:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now gopay-gateway
-```
-
----
-
-## 📡 API Reference
-
-Semua endpoint privat memerlukan autentikasi melalui header atau query parameter:
-```text
-Header   : X-Api-Key: <API_KEY>
-Query    : ?api_key=<API_KEY>
-```
-
-### 1. `GET /token-status` — Cek Status Sesi Token
-
-```http
-GET http://localhost:3000/token-status?api_key=RAHASIA
-```
-**Respon Sukses:**
-```json
-{
-  "success": true,
-  "data": {
-    "token_status": "valid",
-    "message": "Token dan Sesi GoPay Merchant Aktif"
-  }
-}
-```
-
----
-
-### 2. `GET /create-qris` (atau `POST`) — Buat QRIS Dinamis
-
-Membuat QRIS dinamis EMVCo lokal dengan masa berlaku **5 menit**.
-```http
-GET http://localhost:3000/create-qris?amount=25000&api_key=RAHASIA
-```
-| Parameter | Tipe     | Keterangan                             |
-| --------- | -------- | -------------------------------------- |
-| `amount`  | `number` | Nominal transaksi dalam Rupiah (wajib) |
-| `api_key` | `string` | API Key rahasia                        |
-
-**Respon Sukses:**
-```json
-{
-  "success": true,
-  "data": {
-    "qris_id": "a1b2c3d4e5f67890",
-    "trx_id": "TRX-A3F8K2M91234",
-    "qris_url": "http://localhost:3000/qr/a1b2c3d4e5f67890",
-    "qris_code": "00020101021126...",
-    "amount": 25000,
-    "expires_at": "2026-10-22T12:05:00.000Z",
-    "expires_in": "5 menit"
-  }
-}
-```
-
----
-
-### 3. `GET /qr/:id` — Halaman Pembayaran Checkout QRIS
-
-Membuka tampilan web interaktif ramah pengguna untuk pelanggan:
-- Timer hitung mundur 5 menit.
-- Tombol cek manual instan.
-- Gambar QRIS yang dirender langsung via Base64 Data URL tanpa dependensi server luar.
-- Format gambar mentah PNG dapat diakses via `?format=raw` atau `?raw=1`.
-
----
-
-### 4. `GET /api/qr-status/:id` — Status Check Public
-
-Endpoint publik (bebas API key) khusus untuk polling status transaksi dari halaman checkout browser:
-```http
-GET http://localhost:3000/api/qr-status/a1b2c3d4e5f67890
-```
-
----
-
-### 5. `GET /check-payment` (atau `POST`) — Verifikasi Pembayaran Masuk
-
-Mencari transaksi yang cocok berdasarkan nominal dan timestamp. Dilindungi transaksi SQLite atomic anti-double-claim:
-```http
-GET http://localhost:3000/check-payment?amount=25000&trx_id=TRX-A3F8K2M91234&api_key=RAHASIA
-```
-| Parameter   | Tipe     | Default     | Keterangan                                               |
-| ----------- | -------- | ----------- | -------------------------------------------------------- |
-| `amount`    | `number` | —           | Nominal transaksi yang dicari (wajib)                    |
-| `trx_id`    | `string` | —           | TRX-ID dari `/create-qris` untuk isolasi klaim transaksi |
-| `startTime` | `string` | 24 jam lalu | Timestamp ISO awal pencarian mutasi                      |
-| `api_key`   | `string` | —           | API Key Anda                                             |
-
-**Respon Sukses (Lunas):**
-```json
-{
-  "success": true,
-  "paid": true,
-  "transaction": {
-    "transaction_id": "gopay-tx-12345",
-    "order_id": "GOPAY-1234567890",
-    "amount": 25000,
-    "payer_issuer": "GoPay / BCA",
-    "payment_type": "QRIS",
-    "transaction_time": "2026-10-22T12:01:12.000Z"
-  }
-}
-```
-
----
-
-### 6. `GET /transactions` — Riwayat Mutasi Transaksi
-
-```http
-GET http://localhost:3000/transactions?pageSize=20&api_key=RAHASIA
-```
-
----
-
-### 7. `GET /api/logs` & `GET /health`
-
-- `/health` — Status kesehatan container, database SQLite, dan sesi upstream.
-- `/api/logs` — In-memory ring buffer log server.
-
----
-
-## 📁 Struktur Project
-
-```
-gopay-gateway/
-├── src/
-│   ├── app.js                         # Inisialisasi Express & Middleware
-│   ├── server.js                      # Entrypoint Server & Graceful Shutdown
-│   ├── healthcheck.js                 # Native Healthcheck Script Docker
-│   ├── config/env.js                  # Skema & Validasi Environment
-│   ├── routes/                        # Modular Router Endpoints
-│   ├── services/                      # Logika Bisnis, QRIS, Upstream & Sesi
-│   ├── storage/                       # bun:sqlite Engine, Migrations & Repo
-│   ├── utils/                         # Logger, Crypto IDs & Sanitizer
-│   └── web/                           # Template Checkout UI
-├── tests/                             # Unit & Integration Test Suites
-├── docs/                              # Kontrak API, Audit & Benchmark
-├── data/                              # SQLite Database Storage (WAL)
-├── login.js                           # Sesi OTP CLI (Black-box Wrapper)
-├── sessionManager.js                  # Engine Pembaru Sesi Upstream
-├── server.js                          # Backward-Compatible Entrypoint Shim
-├── Dockerfile                         # Multi-stage Bun Alpine Container
-├── docker-compose.yml                 # Service & Persistent Volume Spec
-└── bun.lock                           # Lockfile Dependensi Bun
-```
-
----
-
-## 💬 Kontak & Komunitas
-
-<p align="center">
-  <a href="https://t.me/ahmadzakiyo">
-    <img src="https://img.shields.io/badge/Telegram-Chat%20Owner-2CA5E0?logo=telegram&logoColor=white&style=for-the-badge" alt="Chat Owner" />
-  </a>
-  &nbsp;
-  <a href="https://t.me/nuxysproject">
-    <img src="https://img.shields.io/badge/Telegram-Channel%20Updates-2CA5E0?logo=telegram&logoColor=white&style=for-the-badge" alt="Channel" />
-  </a>
-</p>
-
-- 👤 **Owner / Developer:** [@ahmadzakiyo](https://t.me/ahmadzakiyo)
-- 📢 **Channel (Update & Project):** [@nuxysproject](https://t.me/nuxysproject)
-
----
-
-## ☕ Dukung Project Ini
-
-Kalau project ini bermanfaat, dukung pengembangan selanjutnya ya! ☕
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/ahmadzakiyox/DB/main/6269360055874426106_121.jpg" alt="QRIS Donasi ahmadzakiyo" width="250" />
-  <br/>
-  <sub>Nominal bebas — terima kasih banyak! 🙏</sub>
-</p>

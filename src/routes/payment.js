@@ -18,30 +18,8 @@ router.get("/api/qr-status/:id", async (req, res) => {
     return res.json({ success: true, paid: true, status: "PAID", transaction: qris.transaction });
   }
 
-  // Cek pembayaran ke upstream terlebih dahulu sebelum menandai kedaluwarsa
-  try {
-    const matched = await verifyPayment(
-      qris.amount,
-      qris.createdAt,
-      null,
-      req.headers["user-agent"],
-      qrisId,
-    );
-    if (matched) {
-      qris.status = "PAID";
-      qris.transaction = matched;
-      qrisStore.set(qrisId, qris);
-      logActivity(
-        "SUCCESS",
-        `Pembayaran QRIS ID ${qrisId} terverifikasi lunas untuk nominal Rp ${qris.amount}`,
-      );
-      return res.json({ success: true, paid: true, status: "PAID", transaction: matched });
-    }
-  } catch (_err) {
-    // Lanjut ke pemeriksaan expiry jika verifyPayment gagal
-  }
-
-  if (Date.now() > qris.expiresAt.getTime()) {
+  // Cek kedaluwarsa terlebih dahulu untuk mencegah klaim transaksi pada QRIS kedaluwarsa
+  if (Date.now() > qris.expiresAt.getTime() || qris.status === "EXPIRED") {
     qrisStore.delete(qrisId);
     return res.json({
       success: false,
@@ -49,6 +27,31 @@ router.get("/api/qr-status/:id", async (req, res) => {
       status: "EXPIRED",
       message: "QRIS sudah kedaluwarsa",
     });
+  }
+
+  // Cek pembayaran ke upstream hanya untuk QRIS aktif berstatus PENDING
+  if (qris.status === "PENDING") {
+    try {
+      const matched = await verifyPayment(
+        qris.amount,
+        qris.createdAt,
+        null,
+        req.headers["user-agent"],
+        qrisId,
+      );
+      if (matched) {
+        qris.status = "PAID";
+        qris.transaction = matched;
+        qrisStore.set(qrisId, qris);
+        logActivity(
+          "SUCCESS",
+          `Pembayaran QRIS ID ${qrisId} terverifikasi lunas untuk nominal Rp ${qris.amount}`,
+        );
+        return res.json({ success: true, paid: true, status: "PAID", transaction: matched });
+      }
+    } catch (_err) {
+      // Lanjut jika verifikasi sementara gagal
+    }
   }
 
   return res.json({

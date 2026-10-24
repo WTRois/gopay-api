@@ -37,14 +37,15 @@ if [ ! -f .env ]; then
         cp .env.example .env
         echo -e "${GREEN}[OK] File .env berhasil dibuat.${NC}"
     else
-        echo -e "${YELLOW}[WARN] File .env.example tidak ditemukan, membuat .env baru...${NC}"
+        echo -e "${YELLOW}[WARN] File .env.example tidak ditemukan, membuat .env baru dengan kunci acak...${NC}"
+        GEN_API_KEY=$(openssl rand -hex 24 2>/dev/null || date +%s | sha256sum | head -c 32)
         cat <<EOT > .env
 PORT=3000
-API_KEY=cobadulu
+API_KEY=${GEN_API_KEY}
 QRIS_STATIC=
 GOPAY_MERCHANT_ID=
 EOT
-        echo -e "${GREEN}[OK] File .env dibuat dengan konfigurasi default.${NC}"
+        echo -e "${GREEN}[OK] File .env dibuat dengan konfigurasi aman (API_KEY di-generate otomatis).${NC}"
     fi
 else
     echo -e "[INFO] File .env sudah ada."

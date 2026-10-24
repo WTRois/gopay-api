@@ -13,6 +13,7 @@ services:
       - .env
     volumes:
       - ./data:/app/data
+      - ./.GOPAY_SESI_JANGAN_DIHAPUS.json:/app/.GOPAY_SESI_JANGAN_DIHAPUS.json
     healthcheck:
       test: ["CMD", "bun", "run", "src/healthcheck.js"]
       interval: 30s

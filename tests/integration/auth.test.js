@@ -47,11 +47,11 @@ describe("Authentication & API Key Verification", () => {
     expect(Array.isArray(body.logs)).toBe(true);
   });
 
-  test("accepts request with valid API Key in query parameter", async () => {
+  test("rejects request with API Key in query parameter", async () => {
     const res = await fetch(`${baseUrl}/api/logs?api_key=${validApiKey}`);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(Array.isArray(body.logs)).toBe(true);
+    expect(body.success).toBe(false);
+    expect(body.message).toContain("query string");
   });
 });

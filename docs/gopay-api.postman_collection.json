@@ -1,0 +1,1250 @@
+{
+  "info": {
+    "_postman_id": "c1f7b8a0-4321-4f9e-8765-gopaygateway01",
+    "name": "GoPay Merchant Gateway & QRIS Verification API",
+    "description": "Koleksi Postman resmi untuk GoPay Merchant Gateway & QRIS Verification API. Dilengkapi contoh respon sukses (200 OK), informasi status (INFO, PENDING), peringatan (WARNING, EXPIRED), dan galat (ERROR, 400 Bad Request, 401 Unauthorized, 404/410).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "apiKey",
+      "value": "rahasia_api_key_kamu",
+      "type": "string"
+    },
+    {
+      "key": "qrisId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "trxId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health & Status",
+      "item": [
+        {
+          "name": "Root Gateway Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/",
+              "host": ["{{baseUrl}}"],
+              "path": [""]
+            },
+            "description": "Mengecek apakah server gateway berjalan (mengembalikan teks 'GoPay Partner API Gateway Berjalan')."
+          },
+          "response": [
+            {
+              "name": "200 Success - Server Berjalan",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/",
+                  "host": ["{{baseUrl}}"],
+                  "path": [""]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/html; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "GoPay Partner API Gateway Berjalan"
+            }
+          ]
+        },
+        {
+          "name": "Health Check (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Endpoint health check standar yang mengembalikan status sistem dan timestamp ISO."
+          },
+          "response": [
+            {
+              "name": "200 Success - System Health OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"OK\",\n  \"service\": \"GoPay Partner API Gateway\",\n  \"timestamp\": \"2026-10-24T10:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Endpoint health check tambahan di bawah namespace /api/health."
+          },
+          "response": [
+            {
+              "name": "200 Success - API Health Normal",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/health",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Layanan API GoPay Berfungsi Normal\",\n  \"timestamp\": \"2026-10-24T10:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GoPay Session / Token Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/token-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["token-status"]
+            },
+            "description": "Mengecek apakah token sesi login GoPay masih aktif dan siap digunakan untuk query transaksi upstream."
+          },
+          "response": [
+            {
+              "name": "200 Success - Sesi Aktif",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/token-status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["token-status"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Sesi GoPay AKTIF dan SIAP DIGUNAKAN\",\n  \"merchant_id\": \"merch_123456789\"\n}"
+            },
+            {
+              "name": "401 Warning/Error - Sesi Belum Ada / Kedaluwarsa",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/token-status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["token-status"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Sesi GoPay belum ada atau kedaluwarsa. Jalankan `node login.js` di terminal.\"\n}"
+            },
+            {
+              "name": "401 Error - API Key Tidak Disertakan / Salah",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/token-status",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["token-status"]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"API Key tidak valid atau tidak disertakan!\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. QRIS Payments",
+      "item": [
+        {
+          "name": "Create Dynamic QRIS (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success && res.data) {",
+                  "    if (res.data.qris_id) {",
+                  "        pm.collectionVariables.set('qrisId', res.data.qris_id);",
+                  "        console.log('Saved qrisId:', res.data.qris_id);",
+                  "    }",
+                  "    if (res.data.trx_id) {",
+                  "        pm.collectionVariables.set('trxId', res.data.trx_id);",
+                  "        console.log('Saved trxId:', res.data.trx_id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/create-qris",
+              "host": ["{{baseUrl}}"],
+              "path": ["create-qris"]
+            },
+            "description": "Membuat QRIS Dinamis baru via JSON Body. Script pengujian otomatis menyimpan qris_id dan trx_id ke variabel koleksi."
+          },
+          "response": [
+            {
+              "name": "200 Success - QRIS Berhasil Dibuat",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 50000\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/create-qris",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["create-qris"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"qris_id\": \"1a2b3c4d5e6f7a8b\",\n    \"trx_id\": \"TRX-1729580000000-ABCDEF\",\n    \"qris_url\": \"http://localhost:3000/qr/1a2b3c4d5e6f7a8b\",\n    \"qris_code\": \"00020101021226...540550000...5802ID...6304A1B2\",\n    \"amount\": 50000,\n    \"expires_at\": \"2026-10-24T10:05:00.000Z\",\n    \"expires_in\": \"5 menit\"\n  }\n}"
+            },
+            {
+              "name": "400 Error - Nominal Tidak Valid / Pecahan Desimal",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 50000.5\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/create-qris",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["create-qris"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Nominal harus berupa angka bulat positif (tidak boleh desimal)\"\n}"
+            },
+            {
+              "name": "400 Error - Nominal Melebihi Batas Maksimum",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 20000000\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/create-qris",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["create-qris"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Nominal pembayaran melebihi batas maksimum Rp 10.000.000\"\n}"
+            },
+            {
+              "name": "500 Error - QRIS_STATIC Belum Dikonfigurasi",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 50000\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/create-qris",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["create-qris"]
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"QRIS_STATIC belum dikonfigurasi di .env\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Dynamic QRIS (GET Query)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/create-qris?amount=25000",
+              "host": ["{{baseUrl}}"],
+              "path": ["create-qris"],
+              "query": [
+                {
+                  "key": "amount",
+                  "value": "25000",
+                  "description": "Nominal pembayaran dalam Rupiah"
+                }
+              ]
+            },
+            "description": "Membuat QRIS Dinamis via URL Query String (?amount=...)."
+          },
+          "response": [
+            {
+              "name": "200 Success - QRIS Berhasil Dibuat via Query",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/create-qris?amount=25000",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["create-qris"],
+                  "query": [
+                    {
+                      "key": "amount",
+                      "value": "25000"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"qris_id\": \"2b3c4d5e6f7a8b9c\",\n    \"trx_id\": \"TRX-1729580005000-FEDCBA\",\n    \"qris_url\": \"http://localhost:3000/qr/2b3c4d5e6f7a8b9c\",\n    \"qris_code\": \"00020101021226...540525000...5802ID...6304B3C4\",\n    \"amount\": 25000,\n    \"expires_at\": \"2026-10-24T10:05:00.000Z\",\n    \"expires_in\": \"5 menit\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "View Checkout HTML Page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/qr/{{qrisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["qr", "{{qrisId}}"]
+            },
+            "description": "Membuka halaman web checkout bawaan (Dark mode UI, countdown timer, auto-polling toggle, dan tombol Cek Status)."
+          },
+          "response": [
+            {
+              "name": "200 Success - Halaman Checkout HTML",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/qr/1a2b3c4d5e6f7a8b",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["qr", "1a2b3c4d5e6f7a8b"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "html",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/html; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "<!DOCTYPE html>\n<html lang=\"id\">\n<head>\n  <title>Pembayaran QRIS - Rp 50.000</title>\n</head>\n<body>\n  <!-- Dark mode checkout card, countdown timer & polling -->\n</body>\n</html>"
+            },
+            {
+              "name": "404 Error - QRIS Tidak Ditemukan",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/qr/unknown_id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["qr", "unknown_id"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "html",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/html; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "<h3>Gambar QRIS tidak ditemukan atau telah dihapus</h3>"
+            }
+          ]
+        },
+        {
+          "name": "View Raw QR Image (PNG Buffer)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/qr/{{qrisId}}?format=raw",
+              "host": ["{{baseUrl}}"],
+              "path": ["qr", "{{qrisId}}"],
+              "query": [
+                {
+                  "key": "format",
+                  "value": "raw",
+                  "description": "Menampilkan gambar PNG murni tanpa HTML wrapper"
+                }
+              ]
+            },
+            "description": "Mengambil stream gambar QR mentah berformat PNG langsung dari server lokal."
+          },
+          "response": [
+            {
+              "name": "200 Success - Raw PNG Stream",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/qr/1a2b3c4d5e6f7a8b?format=raw",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["qr", "1a2b3c4d5e6f7a8b"],
+                  "query": [
+                    {
+                      "key": "format",
+                      "value": "raw"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "image/png"
+                }
+              ],
+              "cookie": [],
+              "body": "/* Binary PNG Buffer Data */"
+            },
+            {
+              "name": "410 Warning - QRIS Kedaluwarsa",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/qr/1a2b3c4d5e6f7a8b?format=raw",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["qr", "1a2b3c4d5e6f7a8b"],
+                  "query": [
+                    {
+                      "key": "format",
+                      "value": "raw"
+                    }
+                  ]
+                }
+              },
+              "status": "Gone",
+              "code": 410,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/html; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "QRIS Kedaluwarsa"
+            }
+          ]
+        },
+        {
+          "name": "Check QR Status / Polling",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/qr-status/{{qrisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "qr-status", "{{qrisId}}"]
+            },
+            "description": "Endpoint polling publik yang digunakan halaman checkout frontend untuk mengecek status QRIS (PENDING, PAID, atau EXPIRED)."
+          },
+          "response": [
+            {
+              "name": "200 Info - Status PENDING (Menunggu Pembayaran)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/qr-status/1a2b3c4d5e6f7a8b",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "qr-status", "1a2b3c4d5e6f7a8b"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"paid\": false,\n  \"status\": \"PENDING\",\n  \"message\": \"Belum ada pembayaran masuk\"\n}"
+            },
+            {
+              "name": "200 Success - Status PAID (Lunas)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/qr-status/1a2b3c4d5e6f7a8b",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "qr-status", "1a2b3c4d5e6f7a8b"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"paid\": true,\n  \"status\": \"PAID\",\n  \"transaction\": {\n    \"transaction_id\": \"12345678\",\n    \"order_id\": \"gopay-order-9876\",\n    \"amount\": 50000,\n    \"payer_issuer\": \"BCA\",\n    \"payment_type\": \"QRIS\",\n    \"transaction_time\": \"2026-10-24 10:02:15\",\n    \"status\": \"SETTLEMENT\"\n  }\n}"
+            },
+            {
+              "name": "200 Warning - Status EXPIRED (Kedaluwarsa)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/qr-status/1a2b3c4d5e6f7a8b",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "qr-status", "1a2b3c4d5e6f7a8b"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"paid\": false,\n  \"status\": \"EXPIRED\",\n  \"message\": \"QRIS sudah kedaluwarsa\"\n}"
+            },
+            {
+              "name": "200 Error - Status NOT_FOUND (ID Tidak Ada)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/qr-status/invalid_id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "qr-status", "invalid_id"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"status\": \"NOT_FOUND\",\n  \"message\": \"QRIS tidak ditemukan\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Verification & Claims",
+      "item": [
+        {
+          "name": "Check Payment S2S (POST Body)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000,\n  \"trx_id\": \"{{trxId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/check-payment",
+              "host": ["{{baseUrl}}"],
+              "path": ["check-payment"]
+            },
+            "description": "Verifikasi pembayaran server-to-server secara manual berdasarkan nominal dan trx_id."
+          },
+          "response": [
+            {
+              "name": "200 Success - Pembayaran Ditemukan & Lunas",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 50000,\n  \"trx_id\": \"TRX-1729580000000-ABCDEF\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/check-payment",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["check-payment"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"paid\": true,\n  \"transaction\": {\n    \"transaction_id\": \"12345678\",\n    \"order_id\": \"gopay-order-9876\",\n    \"amount\": 50000,\n    \"payer_issuer\": \"GoPay / Bank\",\n    \"payment_type\": \"GOPAY_INSTORE\",\n    \"transaction_time\": \"2026-10-24 10:02:15\",\n    \"status\": \"SETTLEMENT\"\n  }\n}"
+            },
+            {
+              "name": "200 Info - Pembayaran Belum Ditemukan / Sudah Diklaim",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 50000\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/check-payment",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["check-payment"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"paid\": false,\n  \"message\": \"Pembayaran belum ditemukan atau sudah pernah diklaim\"\n}"
+            },
+            {
+              "name": "400 Error - Nominal Tidak Valid",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": -100\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/check-payment",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["check-payment"]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Nominal pembayaran tidak valid\"\n}"
+            },
+            {
+              "name": "500 Error - Upstream Gojek Gagal Dihubungi",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 50000\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/check-payment",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["check-payment"]
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"message\": \"Gagal mengambil data transaksi dari API GoPay\",\n  \"error\": \"connect ECONNREFUSED 10.0.0.1\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Check Payment S2S (GET Query)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/check-payment?amount=50000",
+              "host": ["{{baseUrl}}"],
+              "path": ["check-payment"],
+              "query": [
+                {
+                  "key": "amount",
+                  "value": "50000",
+                  "description": "Nominal pembayaran"
+                }
+              ]
+            },
+            "description": "Verifikasi pembayaran server-to-server via HTTP GET Query String."
+          },
+          "response": [
+            {
+              "name": "200 Success - Verifikasi via Query",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/check-payment?amount=50000",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["check-payment"],
+                  "query": [
+                    {
+                      "key": "amount",
+                      "value": "50000"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"paid\": true,\n  \"transaction\": {\n    \"transaction_id\": \"12345678\",\n    \"order_id\": \"gopay-order-9876\",\n    \"amount\": 50000,\n    \"payer_issuer\": \"GoPay / Bank\",\n    \"payment_type\": \"GOPAY_INSTORE\",\n    \"transaction_time\": \"2026-10-24 10:02:15\",\n    \"status\": \"SETTLEMENT\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Transactions & Audit Logs",
+      "item": [
+        {
+          "name": "Get Transactions (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions"],
+              "query": [
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Jumlah transaksi per halaman"
+                },
+                {
+                  "key": "startTime",
+                  "value": "1729500000",
+                  "disabled": true,
+                  "description": "Filter timestamp Unix awal (opsional)"
+                },
+                {
+                  "key": "endTime",
+                  "value": "1729600000",
+                  "disabled": true,
+                  "description": "Filter timestamp Unix akhir (opsional)"
+                }
+              ]
+            },
+            "description": "Mengambil daftar mutasi transaksi GoPay dari server upstream Gojek."
+          },
+          "response": [
+            {
+              "name": "200 Success - Daftar Transaksi",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/transactions?pageSize=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["transactions"],
+                  "query": [
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"total_amount\": 150000,\n  \"data\": {\n    \"transactions\": [\n      {\n        \"id\": \"12345678\",\n        \"order_id\": \"gopay-order-9876\",\n        \"gross_amount\": 50000,\n        \"status\": \"SETTLEMENT\",\n        \"transaction_time\": \"2026-10-24 10:02:15\",\n        \"payment_type\": \"QRIS\"\n      }\n    ]\n  }\n}"
+            },
+            {
+              "name": "400 Error - Sesi GoPay Belum Login",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/transactions?pageSize=20",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["transactions"],
+                  "query": [
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": false,\n  \"error\": \"Sesi GoPay belum ada. Jalankan `node login.js` di terminal.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get All Transactions (Current Month)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transactions/all?pageSize=100",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions", "all"],
+              "query": [
+                {
+                  "key": "pageSize",
+                  "value": "100",
+                  "description": "Ukuran data mutasi transaksi"
+                }
+              ]
+            },
+            "description": "Mengambil semua transaksi mutasi masuk pada bulan berjalan."
+          },
+          "response": [
+            {
+              "name": "200 Success - Semua Transaksi Bulan Ini",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/transactions/all?pageSize=100",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["transactions", "all"],
+                  "query": [
+                    {
+                      "key": "pageSize",
+                      "value": "100"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"total_amount\": 1500000,\n  \"data\": {\n    \"transactions\": [\n      {\n        \"id\": \"12345678\",\n        \"order_id\": \"gopay-order-9876\",\n        \"gross_amount\": 50000,\n        \"status\": \"SETTLEMENT\",\n        \"transaction_time\": \"2026-10-24 10:02:15\",\n        \"payment_type\": \"QRIS\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Activity Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logs"]
+            },
+            "description": "Melihat in-memory audit logs aktivitas sistem gateway (verifikasi berhasil, kegagalan, dan event sistem)."
+          },
+          "response": [
+            {
+              "name": "200 Success - Activity Logs Lengkap (SUCCESS, INFO, WARNING, ERROR, SYSTEM)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{apiKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/logs",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "logs"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"logs\": [\n    {\n      \"id\": 1729580120000,\n      \"timestamp\": \"2026-10-24T10:02:00.000Z\",\n      \"type\": \"SUCCESS\",\n      \"message\": \"Pembayaran QRIS ID 1a2b3c4d5e6f7a8b terverifikasi lunas untuk nominal Rp 50000\",\n      \"details\": {\n        \"transaction_id\": \"12345678\",\n        \"amount\": 50000\n      }\n    },\n    {\n      \"id\": 1729580100000,\n      \"timestamp\": \"2026-10-24T10:01:40.000Z\",\n      \"type\": \"WARNING\",\n      \"message\": \"Sesi expired (401) ke upstream. Memulai auto-refresh...\",\n      \"details\": null\n    },\n    {\n      \"id\": 1729580050000,\n      \"timestamp\": \"2026-10-24T10:00:50.000Z\",\n      \"type\": \"INFO\",\n      \"message\": \"QRIS Dinamis dibuat | TRX-ID: TRX-1729580000000-ABCDEF | Nominal: Rp 50000\",\n      \"details\": null\n    },\n    {\n      \"id\": 1729580010000,\n      \"timestamp\": \"2026-10-24T10:00:10.000Z\",\n      \"type\": \"ERROR\",\n      \"message\": \"Gagal periksa pembayaran: HTTP 500: Server Error\",\n      \"details\": null\n    },\n    {\n      \"id\": 1729580000000,\n      \"timestamp\": \"2026-10-24T10:00:00.000Z\",\n      \"type\": \"SYSTEM\",\n      \"message\": \"GoPay Partner Gateway berjalan pada port 3000\",\n      \"details\": null\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
