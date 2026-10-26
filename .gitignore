@@ -1,16 +1,35 @@
+# Dependencies
 node_modules/
+frontend/node_modules/
+
+# Secrets & Environment
 .env
+.env.*
+!.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 .gopay_cache.json
 .GOPAY_SESI_JANGAN_DIHAPUS.json
+
+# Nuxt & Build Output
+.output/
+.nuxt/
+dist/
+frontend/.output/
+frontend/.nuxt/
+
+# Logs & Scripts
 *.log
 *.raw.js
 obfuscate.js
 
-# Storage & persistent DB
+# Storage & SQLite Persistent DB
 data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
 
-# System
+# System & OS
 .DS_Store
+Thumbs.db

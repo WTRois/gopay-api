@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --color-base-100: #ffffff;
+  --color-base-200: #f2f2f2;
+  --color-base-300: #e0e4de;
+  --color-base-content: #1d221c;
+
+  --color-primary: #689d4b;
+  --color-primary-content: #ffffff;
+
+  --color-secondary: #91ae6e;
+  --color-secondary-content: #ffffff;
+
+  --color-accent: #d96868;
+  --color-accent-content: #ffffff;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-base-100: #1b1f1a;
+  --color-base-200: #121512;
+  --color-base-300: #272d25;
+  --color-base-content: #e8ede6;
+
+  --color-primary: #689d4b;
+  --color-primary-content: #ffffff;
+
+  --color-secondary: #91ae6e;
+  --color-secondary-content: #121512;
+
+  --color-accent: #d96868;
+  --color-accent-content: #ffffff;
+}
+
+/* Force palette colors so DaisyUI defaults can never turn purple/indigo */
+.bg-primary {
+  background-color: var(--color-primary) !important;
+}
+.text-primary {
+  color: var(--color-primary) !important;
+}
+.border-primary {
+  border-color: var(--color-primary) !important;
+}
+
+.bg-secondary {
+  background-color: var(--color-secondary) !important;
+}
+.text-secondary {
+  color: var(--color-secondary) !important;
+}
+.border-secondary {
+  border-color: var(--color-secondary) !important;
+}
+
+.bg-accent {
+  background-color: var(--color-accent) !important;
+}
+.text-accent {
+  color: var(--color-accent) !important;
+}
+.border-accent {
+  border-color: var(--color-accent) !important;
+}
+
+/* DaisyUI Button Palette Overrides */
+.btn-primary {
+  --btn-color: #689d4b !important;
+  --btn-fg: #ffffff !important;
+  background-color: #689d4b !important;
+  border-color: #689d4b !important;
+  color: #ffffff !important;
+}
+.btn-primary:hover {
+  background-color: #57853e !important;
+  border-color: #57853e !important;
+  color: #ffffff !important;
+}
+
+.btn-secondary {
+  --btn-color: #91ae6e !important;
+  --btn-fg: #ffffff !important;
+  background-color: #91ae6e !important;
+  border-color: #91ae6e !important;
+  color: #ffffff !important;
+}
+
+.btn-accent {
+  --btn-color: #d96868 !important;
+  --btn-fg: #ffffff !important;
+  background-color: #d96868 !important;
+  border-color: #d96868 !important;
+  color: #ffffff !important;
+}
+
+/* Focus and Active States */
+.focus\:border-primary:focus {
+  border-color: #689d4b !important;
+}
+
+/* Quick Select Buttons active color */
+button.btn-primary {
+  background-color: #689d4b !important;
+  color: #ffffff !important;
+}

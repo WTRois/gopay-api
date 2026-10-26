@@ -12,7 +12,9 @@
     "benchmark": "bun run scripts/benchmark.js",
     "format": "biome format --write .",
     "lint": "biome lint .",
-    "check": "biome check ."
+    "check": "biome check .",
+    "frontend:dev": "bun --cwd frontend dev",
+    "frontend:build": "bun --cwd frontend build"
   },
   "dependencies": {
     "axios": "^1.7.2",
