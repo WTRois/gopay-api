@@ -1,32 +1,34 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useTheme } from '~/composables/useTheme'
+import { ref, computed, onMounted } from "vue";
+import { useTheme } from "~/composables/useTheme";
 
-const { currentTheme, toggleTheme } = useTheme()
+const { currentTheme, toggleTheme } = useTheme();
 
-const health = ref<{ status?: string; success?: boolean; uptime?: number } | null>(null)
-const isChecking = ref(false)
+const health = ref<{ status?: string; success?: boolean; uptime?: number } | null>(null);
+const isChecking = ref(false);
 
 const isOnline = computed(() => {
-  return health.value?.status?.toUpperCase() === 'OK' || health.value?.success === true
-})
+  return health.value?.status?.toUpperCase() === "OK" || health.value?.success === true;
+});
 
 async function checkHealth() {
   try {
-    isChecking.value = true
-    const res = await $fetch<{ status?: string; success?: boolean; uptime?: number }>('/api/health')
-    health.value = res
+    isChecking.value = true;
+    const res = await $fetch<{ status?: string; success?: boolean; uptime?: number }>(
+      "/api/health",
+    );
+    health.value = res;
   } catch {
-    health.value = { status: 'down' }
+    health.value = { status: "down" };
   } finally {
-    isChecking.value = false
+    isChecking.value = false;
   }
 }
 
 onMounted(() => {
-  checkHealth()
-  setInterval(checkHealth, 30000)
-})
+  checkHealth();
+  setInterval(checkHealth, 30000);
+});
 </script>
 
 <template>

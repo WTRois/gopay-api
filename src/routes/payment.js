@@ -6,6 +6,26 @@ const { validateAmount } = require("../utils/validation");
 
 const router = express.Router();
 
+function extractMerchantInfo(qrisPayload) {
+  if (!qrisPayload || typeof qrisPayload !== "string") {
+    return { name: "", city: "" };
+  }
+  let name = "";
+  let city = "";
+  let i = 0;
+  while (i < qrisPayload.length) {
+    if (i + 4 > qrisPayload.length) break;
+    const tag = qrisPayload.substring(i, i + 2);
+    const length = parseInt(qrisPayload.substring(i + 2, i + 4), 10);
+    if (Number.isNaN(length) || length < 0 || i + 4 + length > qrisPayload.length) break;
+    const val = qrisPayload.substring(i + 4, i + 4 + length);
+    if (tag === "59") name = val;
+    if (tag === "60") city = val;
+    i += 4 + length;
+  }
+  return { name, city };
+}
+
 // Polling status QRIS oleh checkout frontend
 router.get("/api/qr-status/:id", async (req, res) => {
   const qrisId = req.params.id;
@@ -14,8 +34,18 @@ router.get("/api/qr-status/:id", async (req, res) => {
     return res.json({ success: false, status: "NOT_FOUND", message: "QRIS tidak ditemukan" });
   }
 
+  const merchantInfo = extractMerchantInfo(qris.data);
+
   if (qris.status === "PAID") {
-    return res.json({ success: true, paid: true, status: "PAID", transaction: qris.transaction });
+    return res.json({
+      success: true,
+      paid: true,
+      status: "PAID",
+      amount: qris.amount,
+      merchant_name: merchantInfo.name || "GoPay Merchant",
+      merchant_city: merchantInfo.city || "",
+      transaction: qris.transaction,
+    });
   }
 
   // Cek kedaluwarsa terlebih dahulu untuk mencegah klaim transaksi pada QRIS kedaluwarsa
@@ -47,7 +77,15 @@ router.get("/api/qr-status/:id", async (req, res) => {
           "SUCCESS",
           `Pembayaran QRIS ID ${qrisId} terverifikasi lunas untuk nominal Rp ${qris.amount}`,
         );
-        return res.json({ success: true, paid: true, status: "PAID", transaction: matched });
+        return res.json({
+          success: true,
+          paid: true,
+          status: "PAID",
+          amount: qris.amount,
+          merchant_name: merchantInfo.name || "GoPay Merchant",
+          merchant_city: merchantInfo.city || "",
+          transaction: matched,
+        });
       }
     } catch (_err) {
       // Lanjut jika verifikasi sementara gagal
@@ -58,6 +96,9 @@ router.get("/api/qr-status/:id", async (req, res) => {
     success: true,
     paid: false,
     status: "PENDING",
+    amount: qris.amount,
+    merchant_name: merchantInfo.name || "GoPay Merchant",
+    merchant_city: merchantInfo.city || "",
     message: "Belum ada pembayaran masuk",
   });
 });

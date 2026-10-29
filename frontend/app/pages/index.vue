@@ -1,47 +1,57 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed } from "vue";
 
-const router = useRouter()
-const rawAmount = ref<number | ''>(50000)
-const isLoading = ref(false)
-const errorMessage = ref('')
+useHead({
+  title: "Buat QRIS Dinamis",
+});
 
-const quickAmounts = [10000, 20000, 50000, 100000, 200000, 500000]
+const router = useRouter();
+const rawAmount = ref<number | "">("");
+const amountInputRef = ref<HTMLInputElement | null>(null);
+const isLoading = ref(false);
+const errorMessage = ref("");
+
+const quickAmounts = [10000, 20000, 50000, 100000, 200000, 500000];
+
+function clearAmount() {
+  rawAmount.value = "";
+  amountInputRef.value?.focus();
+}
 
 const formattedPreview = computed(() => {
-  if (!rawAmount.value || rawAmount.value <= 0) return 'Rp 0'
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
+  if (!rawAmount.value || rawAmount.value <= 0) return "Rp 0";
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
     maximumFractionDigits: 0,
-  }).format(Number(rawAmount.value))
-})
+  }).format(Number(rawAmount.value));
+});
 
 async function handleSubmit() {
-  errorMessage.value = ''
-  const amount = Number(rawAmount.value)
+  errorMessage.value = "";
+  const amount = Number(rawAmount.value);
 
-  if (!amount || amount < 1000) {
-    errorMessage.value = 'Nominal minimal pembayaran adalah Rp 1.000'
-    return
+  if (!amount || amount < 1) {
+    errorMessage.value = "Nominal minimal pembayaran adalah Rp 1";
+    return;
   }
 
   try {
-    isLoading.value = true
-    const res = await $fetch<{ success: boolean; data: { qris_id: string } }>('/api/create-qris', {
-      method: 'POST',
+    isLoading.value = true;
+    const res = await $fetch<{ success: boolean; data: { qris_id: string } }>("/api/create-qris", {
+      method: "POST",
       body: { amount },
-    })
+    });
 
     if (res.success && res.data?.qris_id) {
-      router.push(`/checkout/${res.data.qris_id}`)
+      router.push(`/checkout/${res.data.qris_id}`);
     } else {
-      errorMessage.value = 'Respon gateway backend tidak valid'
+      errorMessage.value = "Respon gateway backend tidak valid";
     }
   } catch (err: any) {
-    errorMessage.value = err.data?.message || err.message || 'Gagal membuat QRIS dinamis'
+    errorMessage.value = err.data?.message || err.message || "Gagal membuat QRIS dinamis";
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 </script>
@@ -81,14 +91,27 @@ async function handleSubmit() {
               Rp
             </div>
             <input
+              ref="amountInputRef"
               v-model.number="rawAmount"
               type="number"
-              min="1000"
-              step="100"
-              placeholder="50000"
-              class="input input-bordered w-full pl-10 text-base sm:text-lg font-mono font-semibold tracking-tight min-h-[46px] rounded-lg focus:border-primary"
+              min="1"
+              step="1"
+              placeholder="0"
+              class="input input-bordered w-full pl-10 pr-10 text-base sm:text-lg font-mono font-semibold tracking-tight min-h-[46px] rounded-lg focus:border-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               required
             />
+            <button
+              v-if="rawAmount !== '' && rawAmount !== null && rawAmount !== undefined"
+              type="button"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center text-base-content/40 hover:text-base-content transition-colors cursor-pointer"
+              title="Hapus nominal"
+              aria-label="Hapus nominal"
+              @click="clearAmount"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
 

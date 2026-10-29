@@ -1,72 +1,76 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from "vue";
+
+useHead({
+  title: "Riwayat Mutasi",
+});
 
 interface TransactionItem {
-  id?: string
-  trans_id?: string
-  amount: number
-  type?: string
-  description?: string
-  payer_name?: string
-  created_at?: string
-  timestamp?: string
-  status?: string
+  id?: string;
+  trans_id?: string;
+  amount: number;
+  type?: string;
+  description?: string;
+  payer_name?: string;
+  created_at?: string;
+  timestamp?: string;
+  status?: string;
 }
 
 interface TransactionsResponse {
-  success: boolean
-  total_amount?: number
+  success: boolean;
+  total_amount?: number;
   data?: {
-    transactions?: TransactionItem[]
-  }
+    transactions?: TransactionItem[];
+  };
 }
 
-const transactions = ref<TransactionItem[]>([])
-const totalAmount = ref(0)
-const isLoading = ref(true)
-const errorMessage = ref('')
+const transactions = ref<TransactionItem[]>([]);
+const totalAmount = ref(0);
+const isLoading = ref(true);
+const errorMessage = ref("");
 
 async function fetchTransactions() {
   try {
-    isLoading.value = true
-    errorMessage.value = ''
-    const res = await $fetch<TransactionsResponse>('/api/transactions')
+    isLoading.value = true;
+    errorMessage.value = "";
+    const res = await $fetch<TransactionsResponse>("/api/transactions");
     if (res.success) {
-      transactions.value = res.data?.transactions || []
-      totalAmount.value = res.total_amount || 0
+      transactions.value = res.data?.transactions || [];
+      totalAmount.value = res.total_amount || 0;
     }
   } catch (err: any) {
-    errorMessage.value = err.data?.statusMessage || err.message || 'Gagal memuat transaksi'
+    errorMessage.value = err.data?.statusMessage || err.message || "Gagal memuat transaksi";
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
-const totalCount = computed(() => transactions.value.length)
+const totalCount = computed(() => transactions.value.length);
 
 function formatCurrency(val: number) {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
     maximumFractionDigits: 0,
-  }).format(val || 0)
+  }).format(val || 0);
 }
 
 function formatDate(isoStr?: string) {
-  if (!isoStr) return '-'
+  if (!isoStr) return "-";
   try {
-    return new Date(isoStr).toLocaleString('id-ID', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    })
+    return new Date(isoStr).toLocaleString("id-ID", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
   } catch {
-    return isoStr
+    return isoStr;
   }
 }
 
 onMounted(() => {
-  fetchTransactions()
-})
+  fetchTransactions();
+});
 </script>
 
 <template>

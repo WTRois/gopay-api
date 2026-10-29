@@ -1,52 +1,56 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted } from "vue";
+
+useHead({
+  title: "Log Aktivitas Gateway",
+});
 
 interface LogItem {
-  id: number
-  timestamp: string
-  type: 'INFO' | 'SUCCESS' | 'ERROR' | 'WARN' | string
-  message: string
-  details?: any
+  id: number;
+  timestamp: string;
+  type: "INFO" | "SUCCESS" | "ERROR" | "WARN" | string;
+  message: string;
+  details?: any;
 }
 
-const logs = ref<LogItem[]>([])
-const selectedFilter = ref('ALL')
-const isLoading = ref(true)
+const logs = ref<LogItem[]>([]);
+const selectedFilter = ref("ALL");
+const isLoading = ref(true);
 
 async function fetchLogs() {
   try {
-    isLoading.value = true
-    const res = await $fetch<{ success: boolean; logs: LogItem[] }>('/api/logs')
+    isLoading.value = true;
+    const res = await $fetch<{ success: boolean; logs: LogItem[] }>("/api/logs");
     if (res.success) {
-      logs.value = res.logs || []
+      logs.value = res.logs || [];
     }
   } catch (err) {
-    console.error('Failed to load logs', err)
+    console.error("Failed to load logs", err);
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 const filteredLogs = computed(() => {
-  if (selectedFilter.value === 'ALL') return logs.value
-  return logs.value.filter(l => l.type === selectedFilter.value)
-})
+  if (selectedFilter.value === "ALL") return logs.value;
+  return logs.value.filter((l) => l.type === selectedFilter.value);
+});
 
 function formatTime(isoStr: string) {
   try {
-    return new Date(isoStr).toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })
+    return new Date(isoStr).toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
   } catch {
-    return isoStr
+    return isoStr;
   }
 }
 
 onMounted(() => {
-  fetchLogs()
-})
+  fetchLogs();
+});
 </script>
 
 <template>

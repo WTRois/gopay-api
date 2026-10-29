@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import Navbar from '~/components/Navbar.vue'
-import MobileBottomNav from '~/components/MobileBottomNav.vue'
-import { useTheme } from '~/composables/useTheme'
+import Navbar from "~/components/Navbar.vue";
+import MobileBottomNav from "~/components/MobileBottomNav.vue";
+import { useTheme } from "~/composables/useTheme";
 
-const { initTheme } = useTheme()
+const { initTheme } = useTheme();
 
 onMounted(() => {
-  initTheme()
-})
+  initTheme();
+});
 </script>
 
 <template>

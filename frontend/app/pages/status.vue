@@ -1,34 +1,39 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from "vue";
+
+useHead({
+  title: "Status Sesi Gateway",
+});
 
 interface TokenStatusResponse {
-  success: boolean
-  message: string
-  merchant_id?: string
-  error?: string
+  success: boolean;
+  message: string;
+  merchant_id?: string;
+  error?: string;
 }
 
-const status = ref<TokenStatusResponse | null>(null)
-const isLoading = ref(true)
-const errorMessage = ref('')
+const status = ref<TokenStatusResponse | null>(null);
+const isLoading = ref(true);
+const errorMessage = ref("");
 
 async function fetchStatus() {
   try {
-    isLoading.value = true
-    errorMessage.value = ''
-    const res = await $fetch<TokenStatusResponse>('/api/token-status')
-    status.value = res
+    isLoading.value = true;
+    errorMessage.value = "";
+    const res = await $fetch<TokenStatusResponse>("/api/token-status");
+    status.value = res;
   } catch (err: any) {
-    errorMessage.value = err.data?.statusMessage || err.message || 'Sesi GoPay belum aktif atau kedaluwarsa.'
-    status.value = null
+    errorMessage.value =
+      err.data?.statusMessage || err.message || "Sesi GoPay belum aktif atau kedaluwarsa.";
+    status.value = null;
   } finally {
-    isLoading.value = false
+    isLoading.value = false;
   }
 }
 
 onMounted(() => {
-  fetchStatus()
-})
+  fetchStatus();
+});
 </script>
 
 <template>
