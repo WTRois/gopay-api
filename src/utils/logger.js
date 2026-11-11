@@ -16,17 +16,7 @@ function logActivity(type, message, details = null) {
   return logObj;
 }
 
-function getLogs() {
-  return activityLogs;
-}
-
-function clearLogs() {
-  activityLogs.length = 0;
-}
-
 module.exports = {
   activityLogs,
   logActivity,
-  getLogs,
-  clearLogs,
 };

@@ -2,12 +2,7 @@ const app = require("./app");
 const config = require("./config/env");
 const { logActivity, activityLogs } = require("./utils/logger");
 const sessionService = require("./services/sessionService");
-const {
-  claimedTransactions,
-  qrisStore,
-  cleanExpiredTransactions,
-  verifyPayment,
-} = require("./services/paymentService");
+const { qrisStore, cleanExpiredTransactions, verifyPayment } = require("./services/paymentService");
 const { generateDynamicQRIS, calculateCRC16 } = require("./services/qrisService");
 
 // Background Jobs
@@ -56,7 +51,6 @@ if (!import.meta.main) {
     app,
     server,
     logActivity,
-    claimedTransactions,
     qrisStore,
     activityLogs,
     generateDynamicQRIS,

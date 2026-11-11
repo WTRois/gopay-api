@@ -35,18 +35,6 @@ const qrisStore = {
   },
 };
 
-const claimedTransactions = {
-  get(txId) {
-    const claim = paymentRepository.getClaim(txId);
-    if (!claim) return undefined;
-    return { qrisId: claim.payment_id, claimedAt: new Date(claim.claimed_at).getTime() };
-  },
-  set(txId, value) {
-    const qrisId = typeof value === "object" ? value.qrisId : value;
-    paymentRepository.claimTransaction(txId, qrisId);
-  },
-};
-
 function cleanExpiredTransactions() {
   const count = paymentRepository.markExpiredPayments();
   const cutoffIso = new Date(Date.now() - config.claimedCleanupIntervalMs).toISOString();
@@ -197,7 +185,6 @@ async function verifyPayment(
 
 module.exports = {
   paymentRepository,
-  claimedTransactions,
   qrisStore,
   cleanExpiredTransactions,
   verifyPayment,

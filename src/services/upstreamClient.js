@@ -90,14 +90,6 @@ class UpstreamClient {
     this.cache.clear();
     this.inFlightRequests.clear();
   }
-
-  getMetrics() {
-    return {
-      requestsCount: this.requestsCount,
-      cacheSize: this.cache.size,
-      inFlightCount: this.inFlightRequests.size,
-    };
-  }
 }
 
 const upstreamClient = new UpstreamClient();

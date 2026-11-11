@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import { Activity } from "lucide-vue-next";
 import { usePaymentAudio } from "~/composables/usePaymentAudio";
 
 const route = useRoute();
@@ -665,10 +664,18 @@ onUnmounted(() => {
                 <div class="flex flex-col text-left">
                   <div class="flex items-center gap-1 font-medium leading-tight text-[11px]">
                     <span>{{ isPolling ? 'Auto-Polling Aktif' : 'Polling Dinonaktifkan' }}</span>
-                    <Activity
+                    <svg
                       v-if="isPolling"
                       class="w-3.5 h-3.5 text-primary animate-heartbeat shrink-0 inline-block"
-                    />
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                    </svg>
                   </div>
                   <span class="text-[10px] text-base-content/60 leading-tight">
                     {{ isChecking ? 'Sinkronisasi mutasi...' : 'Detak periksa tiap 3 detik' }}

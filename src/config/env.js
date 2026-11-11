@@ -15,7 +15,6 @@ const config = {
   gojekTransactionsUrl:
     process.env.GOJEK_TRANSACTIONS_URL ||
     "https://api.gojekapi.com/merchant-analytics/v2/merchants/transactions",
-  cacheFile: path.resolve(process.cwd(), ".gopay_cache.json"),
   publicBaseUrl: process.env.PUBLIC_BASE_URL || "",
   minAmount: parseInt(process.env.MIN_AMOUNT || "1", 10),
   maxAmount: parseInt(process.env.MAX_AMOUNT || "10000000", 10),

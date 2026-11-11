@@ -5,7 +5,7 @@ const logsRoutes = require("./routes/logs");
 const qrisRoutes = require("./routes/qris");
 const paymentRoutes = require("./routes/payment");
 const transactionsRoutes = require("./routes/transactions");
-const { errorHandler } = require("./middleware/errorHandler");
+const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 
 const app = express();
 
@@ -21,7 +21,8 @@ app.use(qrisRoutes);
 app.use(paymentRoutes);
 app.use(transactionsRoutes);
 
-// Centralized Error Handling
+// Centralized Error & 404 Handling
+app.use(notFoundHandler);
 app.use(errorHandler);
 
 module.exports = app;

@@ -97,18 +97,6 @@ class PaymentRepository {
     })();
   }
 
-  getPendingPayments() {
-    const rows = this.db.prepare("SELECT * FROM payments WHERE status = 'PENDING'").all();
-    return rows.map((r) => this._mapRow(r));
-  }
-
-  countPendingPayments() {
-    const row = this.db
-      .prepare("SELECT COUNT(*) as count FROM payments WHERE status = 'PENDING'")
-      .get();
-    return row ? row.count : 0;
-  }
-
   markExpiredPayments(nowIso = new Date().toISOString()) {
     const stmt = this.db.prepare(`
       UPDATE payments

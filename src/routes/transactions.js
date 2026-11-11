@@ -4,7 +4,7 @@ const { fetchFormattedTransactions } = require("../services/transactionService")
 
 const router = express.Router();
 
-router.get("/transactions", apiKeyAuth, async (req, res, next) => {
+router.get("/transactions", apiKeyAuth, async (req, res) => {
   try {
     const result = await fetchFormattedTransactions({
       startTime: req.query.startTime,
@@ -27,7 +27,7 @@ router.get("/transactions", apiKeyAuth, async (req, res, next) => {
   }
 });
 
-router.get("/transactions/all", apiKeyAuth, async (req, res, next) => {
+router.get("/transactions/all", apiKeyAuth, async (req, res) => {
   try {
     const now = new Date();
     const startOfMonthUnix = Math.floor(
