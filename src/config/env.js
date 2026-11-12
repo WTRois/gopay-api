@@ -24,6 +24,18 @@ const config = {
       ? ":memory:"
       : path.resolve(process.cwd(), "data/gateway.sqlite")),
   upstreamCacheTtlMs: parseInt(process.env.UPSTREAM_CACHE_TTL_MS || "5000", 10),
+  // Strategy B: one shared "recent transactions" fetch per merchant, filtered locally.
+  upstreamWindowHours: parseInt(process.env.UPSTREAM_WINDOW_HOURS || "24", 10),
+  upstreamRecentPageSize: parseInt(process.env.UPSTREAM_RECENT_PAGE_SIZE || "100", 10),
+  // Rate limiting (in-memory; single-instance deployment).
+  rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10),
+  rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || "60", 10),
+  // Comma-separated list; "*" preserves current permissive behaviour.
+  allowedOrigins: (process.env.ALLOWED_ORIGINS || "*")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+  logRetentionDays: parseInt(process.env.LOG_RETENTION_DAYS || "7", 10),
 };
 
 module.exports = config;

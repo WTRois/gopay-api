@@ -1,4 +1,5 @@
 const config = require("../config/env");
+const { PAYMENT_TYPES, TRANSACTION_STATUSES } = require("../config/constants");
 const { upstreamClient } = require("./upstreamClient");
 
 async function fetchFormattedTransactions({
@@ -20,8 +21,8 @@ async function fetchFormattedTransactions({
   const params = {
     from: 0,
     size: parseInt(pageSize, 10),
-    statuses: "SETTLEMENT,CAPTURE,REFUND,PARTIAL_REFUND",
-    payment_types: "QRIS,GOPAY,OFFLINE_CREDIT_CARD,OFFLINE_DEBIT_CARD,CREDIT_CARD",
+    statuses: TRANSACTION_STATUSES,
+    payment_types: PAYMENT_TYPES,
     start_time: startTimeISO,
     end_time: endTimeISO,
     merchant_ids: effectiveMerchantId,

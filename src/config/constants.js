@@ -1,0 +1,8 @@
+// Shared Gojek merchant-analytics filters used by every transaction query.
+const TRANSACTION_STATUSES = "SETTLEMENT,CAPTURE,REFUND,PARTIAL_REFUND";
+const PAYMENT_TYPES = "QRIS,GOPAY,OFFLINE_CREDIT_CARD,OFFLINE_DEBIT_CARD,CREDIT_CARD";
+
+module.exports = {
+  TRANSACTION_STATUSES,
+  PAYMENT_TYPES,
+};

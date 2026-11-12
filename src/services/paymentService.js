@@ -87,20 +87,8 @@ async function verifyPayment(
     ? new Date(targetPayment.expiresAt).getTime() + 60000 // 60s post-expiry grace
     : now.getTime() + 60000;
 
-  const startTimeISO = effectiveStartTime.toISOString();
-  const endTimeISO = now.toISOString();
-
-  const params = {
-    from: 0,
-    size: 20,
-    statuses: "SETTLEMENT,CAPTURE,REFUND,PARTIAL_REFUND",
-    payment_types: "QRIS,GOPAY,OFFLINE_CREDIT_CARD,OFFLINE_DEBIT_CARD,CREDIT_CARD",
-    start_time: startTimeISO,
-    end_time: endTimeISO,
-    merchant_ids: merchantId,
-  };
-
-  const responseData = await upstreamClient.fetchTransactions(params, userAgent);
+  // Strategy B: one shared upstream fetch per merchant, filtered locally below.
+  const responseData = await upstreamClient.fetchRecentTransactions({ merchantId, userAgent });
   const rawTransactions =
     responseData?.transactions || responseData?.data?.transactions || responseData?.data || [];
   const targetAmount = parseInt(amount, 10);
@@ -149,20 +137,14 @@ async function verifyPayment(
           status: status || "SETTLEMENT",
         };
 
-        if (targetPayment || qrisId) {
-          const paymentToUpdate =
-            targetPayment ||
-            paymentRepository.getPayment(qrisId) ||
-            paymentRepository.getPaymentByTrxId(qrisId);
-          if (paymentToUpdate) {
-            paymentRepository.updatePaymentStatus(
-              paymentToUpdate.id,
-              "PAID",
-              new Date(),
-              txId,
-              transactionDetail,
-            );
-          }
+        if (targetPayment) {
+          paymentRepository.updatePaymentStatus(
+            targetPayment.id,
+            "PAID",
+            new Date(),
+            txId,
+            transactionDetail,
+          );
         }
 
         if (claimResult.isNew) {

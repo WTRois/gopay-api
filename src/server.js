@@ -1,6 +1,6 @@
 const app = require("./app");
 const config = require("./config/env");
-const { logActivity, activityLogs } = require("./utils/logger");
+const { logActivity, activityLogs, cleanupOldLogs } = require("./utils/logger");
 const sessionService = require("./services/sessionService");
 const { qrisStore, cleanExpiredTransactions, verifyPayment } = require("./services/paymentService");
 const { generateDynamicQRIS, calculateCRC16 } = require("./services/qrisService");
@@ -10,7 +10,13 @@ let cleanupTimer = null;
 let refreshTimer = null;
 
 if (config.env !== "test") {
-  cleanupTimer = setInterval(cleanExpiredTransactions, 60 * 60 * 1000); // 1 jam
+  cleanupTimer = setInterval(
+    () => {
+      cleanExpiredTransactions();
+      cleanupOldLogs();
+    },
+    60 * 60 * 1000,
+  ); // 1 jam
   refreshTimer = setInterval(() => sessionService.autoRefreshIfExpired(), 6 * 60 * 60 * 1000); // 6 jam
 }
 

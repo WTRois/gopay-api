@@ -3,19 +3,39 @@ const { getDatabase } = require("./database");
 class PaymentRepository {
   constructor(db = null) {
     this._db = db;
+    this._statements = new Map();
+    this._statementsDb = null;
   }
 
   get db() {
     return this._db || getDatabase();
   }
 
+  /**
+   * Returns a cached prepared statement for a given SQL string.
+   * Statements are rebound whenever the underlying database instance changes
+   * (e.g. tests that close and reopen the connection).
+   */
+  _statement(sql) {
+    const db = this.db;
+    if (this._statementsDb !== db) {
+      this._statements = new Map();
+      this._statementsDb = db;
+    }
+
+    let statement = this._statements.get(sql);
+    if (!statement) {
+      statement = db.prepare(sql);
+      this._statements.set(sql, statement);
+    }
+    return statement;
+  }
+
   createPayment({ id, trxId, amount, qrisPayload, expiresAt, createdAt, status = "PENDING" }) {
-    const stmt = this.db.prepare(`
+    this._statement(`
       INSERT INTO payments (id, trx_id, amount, qris_payload, status, created_at, expires_at)
       VALUES ($id, $trxId, $amount, $qrisPayload, $status, $createdAt, $expiresAt)
-    `);
-
-    stmt.run({
+    `).run({
       $id: id,
       $trxId: trxId,
       $amount: amount,
@@ -29,28 +49,26 @@ class PaymentRepository {
   }
 
   getPayment(id) {
-    const row = this.db.prepare("SELECT * FROM payments WHERE id = ?").get(id);
+    const row = this._statement("SELECT * FROM payments WHERE id = ?").get(id);
     if (!row) return null;
     return this._mapRow(row);
   }
 
   getPaymentByTrxId(trxId) {
-    const row = this.db.prepare("SELECT * FROM payments WHERE trx_id = ?").get(trxId);
+    const row = this._statement("SELECT * FROM payments WHERE trx_id = ?").get(trxId);
     if (!row) return null;
     return this._mapRow(row);
   }
 
   updatePaymentStatus(id, status, paidAt = null, upstreamTransactionId = null, metadata = null) {
-    const stmt = this.db.prepare(`
+    this._statement(`
       UPDATE payments
       SET status = $status,
           paid_at = COALESCE($paidAt, paid_at),
           upstream_transaction_id = COALESCE($upstreamTransactionId, upstream_transaction_id),
           payment_metadata = COALESCE($metadata, payment_metadata)
       WHERE id = $id
-    `);
-
-    stmt.run({
+    `).run({
       $id: id,
       $status: status,
       $paidAt: paidAt ? (typeof paidAt === "string" ? paidAt : paidAt.toISOString()) : null,
@@ -66,9 +84,9 @@ class PaymentRepository {
   }
 
   getClaim(upstreamTransactionId) {
-    return this.db
-      .prepare("SELECT * FROM transaction_claims WHERE upstream_transaction_id = ?")
-      .get(upstreamTransactionId);
+    return this._statement(
+      "SELECT * FROM transaction_claims WHERE upstream_transaction_id = ?",
+    ).get(upstreamTransactionId);
   }
 
   /**
@@ -86,33 +104,30 @@ class PaymentRepository {
         return { success: false, claimed: false, claimedBy: existing.payment_id };
       }
 
-      this.db
-        .prepare(`
-          INSERT INTO transaction_claims (upstream_transaction_id, payment_id, claimed_at)
-          VALUES (?, ?, ?)
-        `)
-        .run(upstreamTransactionId, paymentId, new Date().toISOString());
+      this._statement(`
+        INSERT INTO transaction_claims (upstream_transaction_id, payment_id, claimed_at)
+        VALUES (?, ?, ?)
+      `).run(upstreamTransactionId, paymentId, new Date().toISOString());
 
       return { success: true, claimed: true, isNew: true };
     })();
   }
 
   markExpiredPayments(nowIso = new Date().toISOString()) {
-    const stmt = this.db.prepare(`
+    const result = this._statement(`
       UPDATE payments
       SET status = 'EXPIRED'
       WHERE status = 'PENDING' AND expires_at < ?
-    `);
-    const result = stmt.run(nowIso);
+    `).run(nowIso);
     return result.changes;
   }
 
   cleanupOldClaims(cutoffIso) {
-    const stmt = this.db.prepare(`
+    const result = this._statement(`
       DELETE FROM transaction_claims
       WHERE claimed_at < ?
-    `);
-    return stmt.run(cutoffIso).changes;
+    `).run(cutoffIso);
+    return result.changes;
   }
 
   _mapRow(row) {

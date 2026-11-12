@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const config = require("./config/env");
+const { buildCorsOptions } = require("./middleware/corsOptions");
 const healthRoutes = require("./routes/health");
 const logsRoutes = require("./routes/logs");
 const qrisRoutes = require("./routes/qris");
@@ -10,7 +12,7 @@ const { errorHandler, notFoundHandler } = require("./middleware/errorHandler");
 const app = express();
 
 // Global Middlewares
-app.use(cors());
+app.use(cors(buildCorsOptions(config.allowedOrigins)));
 app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: true, limit: "100kb" }));
 

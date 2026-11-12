@@ -136,6 +136,8 @@ sequenceDiagram
 
 > 💡 **Postman Collection**: File Postman Collection siap pakai tersedia di [`docs/gopay-api.postman_collection.json`](docs/gopay-api.postman_collection.json).
 
+> 🛡️ **Rate limit**: `/api/qr-status/:id` dibatasi **60 req/menit per `qrisId`**, sedangkan `/create-qris` dan `/check-payment` dibatasi **60 req/menit per IP**. Respons `429` menyertakan header `Retry-After` serta `X-RateLimit-Limit`, `X-RateLimit-Remaining`, dan `X-RateLimit-Reset`.
+
 ---
 
 ## 🚀 Panduan Memulai (Quick Start)
@@ -154,6 +156,17 @@ QRIS_STATIC=00020101021126... (kode QRIS statis dari aplikasi GoBiz/GoPay Mercha
 GOPAY_MERCHANT_ID=merch_xxxx
 PUBLIC_BASE_URL=http://localhost:3000
 ```
+
+Variabel opsional (default sudah aman untuk single-instance):
+
+| Variabel                    | Default | Keterangan                                                          |
+| --------------------------- | ------- | ------------------------------------------------------------------- |
+| `ALLOWED_ORIGINS`           | `*`     | Daftar origin CORS dipisah koma, mis. `https://app.example.com`.    |
+| `RATE_LIMIT_WINDOW_MS`      | `60000` | Jendela waktu rate limit (ms).                                      |
+| `RATE_LIMIT_MAX`            | `60`    | Maksimum permintaan per kunci per jendela.                          |
+| `UPSTREAM_WINDOW_HOURS`     | `24`    | Rentang pengambilan transaksi upstream (jam).                       |
+| `UPSTREAM_RECENT_PAGE_SIZE` | `100`   | Jumlah transaksi per halaman upstream (cache bersama per merchant). |
+| `LOG_RETENTION_DAYS`        | `7`     | Retensi log aktivitas di SQLite sebelum dibersihkan otomatis.       |
 
 ### 3. Login Akun GoPay
 

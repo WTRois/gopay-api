@@ -1,9 +1,11 @@
 const express = require("express");
 const apiKeyAuth = require("../middleware/apiKey");
+const { ipRateLimiter } = require("../middleware/rateLimit");
 const config = require("../config/env");
 const { logActivity } = require("../utils/logger");
 const { generateQrisId, generateTrxId } = require("../utils/ids");
 const { validateAmount } = require("../utils/validation");
+const { MemoryCache } = require("../utils/memoryCache");
 const { qrisStore } = require("../services/paymentService");
 const {
   generateDynamicQRIS,
@@ -13,9 +15,10 @@ const {
 } = require("../services/qrisService");
 
 const router = express.Router();
+const qrImageCache = new MemoryCache({ maxEntries: 500 });
 
 // Buat QRIS Dinamis (Support GET query & POST body)
-router.all("/create-qris", apiKeyAuth, (req, res) => {
+router.all("/create-qris", apiKeyAuth, ipRateLimiter, (req, res) => {
   const rawAmount = req.body?.amount || req.query?.amount;
   const validation = validateAmount(rawAmount, config.minAmount, config.maxAmount);
 
@@ -91,7 +94,12 @@ router.get("/qr/:id", async (req, res) => {
       return res.status(410).send("QRIS Kedaluwarsa");
     }
     try {
-      const qrBuffer = await generateQrPngBuffer(qris.data, { width: 300 });
+      const cacheKey = `${req.params.id}:raw`;
+      let qrBuffer = qrImageCache.get(cacheKey);
+      if (!qrBuffer) {
+        qrBuffer = await generateQrPngBuffer(qris.data, { width: 300 });
+        qrImageCache.set(cacheKey, qrBuffer, qris.expiresAt.getTime() - Date.now());
+      }
       res.setHeader("Content-Type", "image/png");
       return res.send(qrBuffer);
     } catch (err) {
@@ -106,12 +114,16 @@ router.get("/qr/:id", async (req, res) => {
     minimumFractionDigits: 0,
   }).format(qris.amount);
 
-  let qrImageUrl;
-  try {
-    qrImageUrl = await generateQrDataUrl(qris.data, { width: 260 });
-  } catch (err) {
-    logActivity("ERROR", `Gagal generate inline QR Data URL: ${err.message}`);
-    return res.status(500).send("Gagal membuat gambar QRIS lokal");
+  const qrCacheKey = `${req.params.id}:data`;
+  let qrImageUrl = qrImageCache.get(qrCacheKey);
+  if (!qrImageUrl) {
+    try {
+      qrImageUrl = await generateQrDataUrl(qris.data, { width: 260 });
+      qrImageCache.set(qrCacheKey, qrImageUrl, qris.expiresAt.getTime() - Date.now());
+    } catch (err) {
+      logActivity("ERROR", `Gagal generate inline QR Data URL: ${err.message}`);
+      return res.status(500).send("Gagal membuat gambar QRIS lokal");
+    }
   }
 
   const expiresTimestamp = qris.expiresAt.getTime();

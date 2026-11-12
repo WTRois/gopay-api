@@ -47,6 +47,24 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 3,
+    name: "activity_logs",
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS activity_logs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          timestamp TEXT NOT NULL,
+          type TEXT NOT NULL,
+          message TEXT NOT NULL,
+          details TEXT,
+          created_at TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_activity_logs_timestamp ON activity_logs(timestamp);
+      `);
+    },
+  },
 ];
 
 function runMigrations(db) {

@@ -1,10 +1,13 @@
 const express = require("express");
 const apiKeyAuth = require("../middleware/apiKey");
+const { ipRateLimiter, statusRateLimiter } = require("../middleware/rateLimit");
 const { logActivity } = require("../utils/logger");
+const { MemoryCache } = require("../utils/memoryCache");
 const { qrisStore, verifyPayment } = require("../services/paymentService");
 const { validateAmount } = require("../utils/validation");
 
 const router = express.Router();
+const merchantInfoCache = new MemoryCache({ maxEntries: 500 });
 
 function extractMerchantInfo(qrisPayload) {
   if (!qrisPayload || typeof qrisPayload !== "string") {
@@ -26,15 +29,24 @@ function extractMerchantInfo(qrisPayload) {
   return { name, city };
 }
 
+function getMerchantInfo(qris) {
+  const cached = merchantInfoCache.get(qris.id);
+  if (cached) return cached;
+
+  const info = extractMerchantInfo(qris.data);
+  merchantInfoCache.set(qris.id, info, qris.expiresAt.getTime() - Date.now());
+  return info;
+}
+
 // Polling status QRIS oleh checkout frontend
-router.get("/api/qr-status/:id", async (req, res) => {
+router.get("/api/qr-status/:id", statusRateLimiter, async (req, res) => {
   const qrisId = req.params.id;
   const qris = qrisStore.get(qrisId);
   if (!qris) {
     return res.json({ success: false, status: "NOT_FOUND", message: "QRIS tidak ditemukan" });
   }
 
-  const merchantInfo = extractMerchantInfo(qris.data);
+  const merchantInfo = getMerchantInfo(qris);
 
   if (qris.status === "PAID") {
     return res.json({
@@ -72,7 +84,6 @@ router.get("/api/qr-status/:id", async (req, res) => {
       if (matched) {
         qris.status = "PAID";
         qris.transaction = matched;
-        qrisStore.set(qrisId, qris);
         logActivity(
           "SUCCESS",
           `Pembayaran QRIS ID ${qrisId} terverifikasi lunas untuk nominal Rp ${qris.amount}`,
@@ -104,7 +115,7 @@ router.get("/api/qr-status/:id", async (req, res) => {
 });
 
 // Cek Pembayaran Masuk (Backend / Server-to-Server)
-router.all("/check-payment", apiKeyAuth, async (req, res) => {
+router.all("/check-payment", apiKeyAuth, ipRateLimiter, async (req, res) => {
   const rawAmount = req.body?.amount || req.query?.amount;
   const startTime = req.body?.startTime || req.query?.startTime || req.query?.start_time;
   const scopeId = req.body?.trx_id || req.query?.trx_id || null;
